@@ -1,0 +1,357 @@
+
+openapi: 3.0.3
+info:
+  title: Membership Auto API
+  version: "1.0.0"
+  description: API for Membership Auto (auth, vehicles, telematics, appointments, offers, referrals, chat, files)
+servers:
+  - url: https://api.membershipauto.example.com
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        membershipId:
+          type: string
+        referralCode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AuthResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+        vin:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: integer
+        odometer:
+          type: number
+        dongleId:
+          type: string
+        fuelType:
+          type: string
+    TelemetryBatch:
+      type: object
+      properties:
+        vehicleId:
+          type: string
+        startTimestamp:
+          type: integer
+        endTimestamp:
+          type: integer
+        samples:
+          type: array
+          items:
+            type: object
+            properties:
+              t:
+                type: integer
+              speed:
+                type: number
+              fuelRate:
+                type: number
+              odometer:
+                type: number
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        vehicleId:
+          type: string
+        locationId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+        status:
+          type: string
+paths:
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string }
+                phone: { type: string }
+                password: { type: string }
+                referralCode: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                password: { type: string }
+                deviceId: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/refresh:
+    post:
+      summary: Refresh JWT
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+  /vehicles:
+    get:
+      summary: List user's vehicles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+    post:
+      summary: Add vehicle
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vin: { type: string }
+                make: { type: string }
+                model: { type: string }
+                year: { type: integer }
+                odometer: { type: number }
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+  /vehicles/{id}/link-dongle:
+    post:
+      summary: Link a dongle to vehicle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dongleId: { type: string }
+                connectionType: { type: string, enum: [BLE, WIFI, CLOUD] }
+      responses:
+        "200":
+          description: OK
+  /telematics/{vehicleId}:
+    post:
+      summary: Upload telemetry batch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryBatch'
+      responses:
+        "202":
+          description: accepted
+  /appointments/availability:
+    get:
+      summary: Check availability for a location / date
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: locationId
+          in: query
+          schema: { type: string }
+        - name: vehicleId
+          in: query
+          schema: { type: string }
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: availability
+  /appointments/book:
+    post:
+      summary: Book appointment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                vehicleId: { type: string }
+                locationId: { type: string }
+                startTime: { type: string }
+                services: 
+                  type: array
+                  items: { type: string }
+      responses:
+        "201":
+          description: created
+  /offers:
+    get:
+      summary: List offers for user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: vehicleId
+          in: query
+          schema: { type: string }
+        - name: lat
+          in: query
+          schema: { type: number }
+        - name: lng
+          in: query
+          schema: { type: number }
+      responses:
+        "200":
+          description: offers
+  /referrals/me:
+    get:
+      summary: Get referral status for caller
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: referral info
+  /referrals/apply:
+    post:
+      summary: Apply referral during signup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code: { type: string }
+                newUserId: { type: string }
+      responses:
+        "200":
+          description: OK
+  /chat/threads:
+    get:
+      summary: List chat threads for user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: threads
+  /files/presign:
+    post:
+      summary: Request S3 presigned PUT URL
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename: { type: string }
+                contentType: { type: string }
+      responses:
+        "200":
+          description: presigned info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+                  method: { type: string }
+                  publicUrl: { type: string }

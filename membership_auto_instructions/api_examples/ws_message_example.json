@@ -1,0 +1,17 @@
+{
+  "client_send": {
+    "type": "SEND",
+    "threadId": "thread-uuid",
+    "body": "Hello, I need help"
+  },
+  "server_message": {
+    "type": "MESSAGE",
+    "threadId": "thread-uuid",
+    "message": {
+      "id": "msg-uuid",
+      "body": "Hi! How can I help?",
+      "sender": "agent",
+      "timestamp": 1730003000
+    }
+  }
+}

@@ -1,0 +1,141 @@
+🔑 Your Final Color System (Based on Your Chosen Palette)
+Base / Background
+
+Primary Background: #0D0D0D
+
+Elevated Surfaces / Cards: #1A1A1A
+
+Borders / Hairlines: #2A2A2A
+
+This gives depth and that “premium automotive showroom” feel.
+
+🎨 Brand Colors
+Primary Accent (Gold)
+
+Gold: #CBA86E
+
+Use gold sparingly so it stays premium:
+
+CTAs (primary button)
+
+Section headers
+
+Active icons
+
+Membership tier highlights
+
+Pricing emphasis
+
+Loading indicators, spinners, badges
+
+Think 5–10% usage. More than that kills the premium feel.
+
+📱 UI Feedback Colors
+
+Success: #4CAF50
+
+Error: #DD4A48
+
+Warning (optional): #FFB74D
+
+Info (optional): #64B5F6
+
+Use them mostly for toast messages, form validation, and status chips.
+
+🔤 Text Colors
+
+Primary Text: #FFFFFF
+
+Secondary Text: #B3B3B3
+
+Muted Text: #707070
+
+Disabled: #4A4A4A
+
+This keeps your typography readable on a dark UI.
+
+🔘 Buttons
+Primary Button (CTA)
+
+Background: #CBA86E
+
+Text: #0D0D0D
+
+Secondary Button
+
+Background: #1A1A1A
+
+Border: #CBA86E
+
+Text: #CBA86E
+
+Ghost Button
+
+Text: #CBA86E
+
+Background: transparent
+
+🖼️ Components
+Cards
+
+Background: #1A1A1A
+
+Border: #2A2A2A
+
+Shadow (mobile): subtle elevation + diffused black
+
+Inputs
+
+Background: #1A1A1A
+
+Border: #2A2A2A
+
+Focus Border: #CBA86E
+
+Placeholder: #707070
+
+Navigation Bar
+
+Background: #0D0D0D
+
+Active Icon/Text: #CBA86E
+
+Inactive: #707070
+
+Tabs
+
+Active Tab: gold underline
+
+Inactive: muted grey
+
+🚗 Automotive Feel Enhancers
+
+To maintain an “auto-luxury” vibe, you can include:
+
+Subtle metallic textures or subtle gradients on gold
+
+High contrast sharp edges with rounded radius
+
+Cinematic photos with dark overlays (70–85%)
+
+📱 Mobile + Web Consistency Rule
+
+Use 0D0D0D, 1A1A1A, CBA86E as your core branding everywhere.
+
+If your mobile and web share the same styling rules:
+
+Website: more gradients + large visuals
+
+Mobile: more solid colors + focus states
+
+✔ Palette Summary
+Usage	Color	Hex
+Background	Black	#0D0D0D
+Cards	Dark Gray	#1A1A1A
+Lines	Mid Gray	#2A2A2A
+Primary Accent	Gold	#CBA86E
+Success	Green	#4CAF50
+Error	Red	#DD4A48
+Primary Text	White	#FFFFFF
+Secondary Text	Gray	#B3B3B3
+Muted Text	Dark Gray	#707070

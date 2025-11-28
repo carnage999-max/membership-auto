@@ -1,0 +1,17 @@
+{
+  "request": {
+    "email": "jane@example.com",
+    "password": "pass123"
+  },
+  "response": {
+    "accessToken": "eyJ...",
+    "refreshToken": "rfstoken...",
+    "user": {
+      "id": "uuid",
+      "name": "Jane",
+      "email": "jane@example.com",
+      "membershipId": "MA-0001",
+      "referralCode": "REF-AB12"
+    }
+  }
+}

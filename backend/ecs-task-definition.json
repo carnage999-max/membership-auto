@@ -1,0 +1,109 @@
+{
+  "family": "membership-auto-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<account-id>:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "membership-auto-backend",
+      "image": "<account-id>.dkr.ecr.us-east-1.amazonaws.com/membership-auto-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "membership_auto.settings_production"
+        },
+        {
+          "name": "USE_POSTGRES",
+          "value": "true"
+        },
+        {
+          "name": "USE_S3",
+          "value": "true"
+        },
+        {
+          "name": "AWS_S3_REGION_NAME",
+          "value": "us-east-1"
+        },
+        {
+          "name": "REDIS_HOST",
+          "value": "membership-auto-redis.xxxxx.cache.amazonaws.com"
+        },
+        {
+          "name": "CORS_ALLOWED_ORIGINS",
+          "value": "https://main.d1234567890.amplifyapp.com,https://yourdomain.com"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "SECRET_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/secret-key"
+        },
+        {
+          "name": "ALLOWED_HOSTS",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/allowed-hosts"
+        },
+        {
+          "name": "DB_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/db-name"
+        },
+        {
+          "name": "DB_USER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/db-user"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/db-password"
+        },
+        {
+          "name": "DB_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/db-host"
+        },
+        {
+          "name": "DB_PORT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/db-port"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/aws-access-key"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/aws-secret-key"
+        },
+        {
+          "name": "AWS_STORAGE_BUCKET_NAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:<account-id>:secret:membership-auto/s3-bucket"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/membership-auto-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/schema/')\""
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
+
