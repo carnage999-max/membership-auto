@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Wrench, Leaf, Award, User, Shield, Handshake, Zap } from "lucide-react";
 
 export default function WhyUsPage() {
   const certifications = [
-    { name: "ASE Certified", icon: "🔧" },
-    { name: "EPA Compliant", icon: "🌱" },
-    { name: "BBB A+", icon: "⭐" },
+    { name: "ASE Certified", icon: Wrench },
+    { name: "EPA Compliant", icon: Leaf },
+    { name: "BBB A+", icon: Award },
   ];
 
   return (
@@ -24,8 +25,8 @@ export default function WhyUsPage() {
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <div className="w-64 h-64 bg-[var(--surface)] border border-[var(--gold)] rounded-full mx-auto md:mx-0 flex items-center justify-center text-8xl mb-8 shadow-xl shadow-black/60">
-                  👨‍🔧
+                <div className="w-64 h-64 bg-[var(--surface)] border border-[var(--gold)] rounded-full mx-auto md:mx-0 flex items-center justify-center mb-8 shadow-xl shadow-black/60">
+                  <User className="w-32 h-32 text-[var(--gold)]" strokeWidth={1.5} />
                 </div>
               </div>
               <div>
@@ -76,7 +77,9 @@ export default function WhyUsPage() {
                   key={index}
                   className="bg-[var(--surface)] rounded-lg p-8 text-center border border-[var(--border-color)]"
                 >
-                  <div className="text-6xl mb-4">{cert.icon}</div>
+                  <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--gold)]/10">
+                    <cert.icon className="w-10 h-10 text-[var(--gold)]" strokeWidth={2} />
+                  </div>
                   <h3 className="text-xl font-semibold text-[var(--foreground)]">
                     {cert.name}
                   </h3>
@@ -96,7 +99,9 @@ export default function WhyUsPage() {
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-[var(--surface)] rounded-lg p-8 shadow-sm border border-[var(--border-color)]">
-                <div className="text-5xl mb-4">💎</div>
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--gold)]/10">
+                  <Shield className="w-10 h-10 text-[var(--gold)]" strokeWidth={2} />
+                </div>
                 <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
                   Transparency
                 </h3>
@@ -105,7 +110,9 @@ export default function WhyUsPage() {
                 </p>
               </div>
               <div className="bg-[var(--surface)] rounded-lg p-8 shadow-sm border border-[var(--border-color)]">
-                <div className="text-5xl mb-4">🤝</div>
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--gold)]/10">
+                  <Handshake className="w-10 h-10 text-[var(--gold)]" strokeWidth={2} />
+                </div>
                 <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
                   Honesty
                 </h3>
@@ -114,7 +121,9 @@ export default function WhyUsPage() {
                 </p>
               </div>
               <div className="bg-[var(--surface)] rounded-lg p-8 shadow-sm border border-[var(--border-color)]">
-                <div className="text-5xl mb-4">⚡</div>
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-[var(--gold)]/10">
+                  <Zap className="w-10 h-10 text-[var(--gold)]" strokeWidth={2} />
+                </div>
                 <h3 className="text-xl font-semibold text-[var(--foreground)] mb-3">
                   Innovation
                 </h3>

@@ -11,9 +11,30 @@ class ChatThreadListView(APIView):
 
     def get(self, request):
         """List chat threads for user"""
-        threads = ChatThread.objects.filter(user=request.user).prefetch_related("messages")
+        threads = ChatThread.objects.filter(user=request.user).prefetch_related(
+            "messages"
+        )
         serializer = ChatThreadSerializer(threads, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Create a new chat thread"""
+        subject = request.data.get("subject")
+
+        if not subject:
+            return Response(
+                {"error": "Subject is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Create new thread
+        thread = ChatThread.objects.create(
+            user=request.user,
+            subject=subject,
+        )
+
+        serializer = ChatThreadSerializer(thread)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ChatMessageListView(APIView):
@@ -35,6 +56,7 @@ class ChatMessageListView(APIView):
         if since:
             try:
                 from django.utils.dateparse import parse_datetime
+
                 since_dt = parse_datetime(since)
                 if since_dt:
                     messages = messages.filter(created_at__gt=since_dt)

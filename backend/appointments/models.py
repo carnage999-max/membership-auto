@@ -31,13 +31,31 @@ class Appointment(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="appointments")
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="appointments", null=True, blank=True)
-    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="appointments"
+    )
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.CASCADE,
+        related_name="appointments",
+        null=True,
+        blank=True,
+    )
+    location = models.ForeignKey(
+        Location, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    service_schedule = models.ForeignKey(
+        "services.ServiceSchedule",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointments",
+    )
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(blank=True, null=True)
     services = models.JSONField(default=list, blank=True)
     status = models.TextField(choices=STATUS_CHOICES, default="scheduled")
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

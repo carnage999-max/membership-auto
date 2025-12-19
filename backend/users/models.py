@@ -16,6 +16,9 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("role", "admin")
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
         return self.create_user(email, password, **extra_fields)
 
 
@@ -31,10 +34,23 @@ class User(AbstractBaseUser):
     settings = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
+    # Django admin permissions
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+    def has_perm(self, perm, obj=None):
+        """Does the user have a specific permission?"""
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        """Does the user have permissions to view the app `app_label`?"""
+        return self.is_superuser
 
     class Meta:
         db_table = "users"
@@ -54,6 +70,7 @@ class User(AbstractBaseUser):
 def generate_referral_code():
     """Generate a unique referral code"""
     import secrets
+
     while True:
         code = f"REF-{secrets.token_urlsafe(6).upper()[:6]}"
         if not User.objects.filter(referral_code=code).exists():

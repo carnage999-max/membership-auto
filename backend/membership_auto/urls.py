@@ -24,13 +24,26 @@ from vehicles.urls import telematics_urlpatterns
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
+    path("api/users/", include("users.urls")),
     path("api/vehicles/", include("vehicles.urls")),
-    path("api/telematics/", include(telematics_urlpatterns)),  # For /telematics/{vehicleId}
+    path(
+        "api/telematics/", include(telematics_urlpatterns)
+    ),  # For /telematics/{vehicleId}
     path("api/appointments/", include("appointments.urls")),
     path("api/offers/", include("offers.urls")),
     path("api/referrals/", include("referrals.urls")),
     path("api/chat/", include("chat.urls")),
     path("api/files/", include("files.urls")),
+    path("api/services/", include("services.urls")),
+    path("api/parking/", include("parking.urls")),
+    path("api/vehicle-health/", include("vehicle_health.urls")),
+    # Admin API endpoints
+    path("api/admin/", include("users.admin_urls")),
+    path("api/admin/", include("settings.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
 ]

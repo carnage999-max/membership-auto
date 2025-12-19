@@ -65,10 +65,12 @@ class AppointmentAvailabilityView(APIView):
             ).exists()
 
             if not conflict:
-                available_slots.append({
-                    "start": current_time.isoformat(),
-                    "end": slot_end.isoformat(),
-                })
+                available_slots.append(
+                    {
+                        "start": current_time.isoformat(),
+                        "end": slot_end.isoformat(),
+                    }
+                )
 
             current_time += timedelta(minutes=30)
 
@@ -84,6 +86,7 @@ class AppointmentBookView(APIView):
         location_id = request.data.get("locationId")
         start_time_str = request.data.get("startTime")
         services = request.data.get("services", [])
+        service_schedule_id = request.data.get("serviceScheduleId")
 
         if not vehicle_id or not location_id or not start_time_str:
             return Response(
@@ -117,6 +120,24 @@ class AppointmentBookView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Get service schedule if provided
+        service_schedule = None
+        if service_schedule_id:
+            from services.models import ServiceSchedule
+
+            try:
+                service_schedule = ServiceSchedule.objects.get(
+                    id=service_schedule_id, vehicle=vehicle
+                )
+                # If service schedule provided and no services specified, use schedule's services
+                if not services and service_schedule.service_type:
+                    services = service_schedule.service_type.jobs
+            except ServiceSchedule.DoesNotExist:
+                return Response(
+                    {"error": "Service schedule not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
         # Estimate end time (default 1 hour, adjust based on services)
         estimated_duration = timedelta(hours=1)
         end_time = start_time + estimated_duration
@@ -125,6 +146,7 @@ class AppointmentBookView(APIView):
             user=request.user,
             vehicle=vehicle,
             location=location,
+            service_schedule=service_schedule,
             start_time=start_time,
             end_time=end_time,
             services=services,
@@ -140,6 +162,67 @@ class AppointmentListView(APIView):
 
     def get(self, request):
         """List user's appointments"""
-        appointments = Appointment.objects.filter(user=request.user).order_by("-start_time")
+        appointments = Appointment.objects.filter(user=request.user).order_by(
+            "-start_time"
+        )
         serializer = AppointmentSerializer(appointments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AppointmentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, appointment_id):
+        """Cancel an appointment"""
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, user=request.user)
+
+            # Check if appointment is already cancelled or completed
+            if appointment.status == "cancelled":
+                return Response(
+                    {"error": "Appointment is already cancelled"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if appointment.status == "completed":
+                return Response(
+                    {"error": "Cannot cancel a completed appointment"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Cancel the appointment
+            appointment.status = "cancelled"
+            appointment.save()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Appointment.DoesNotExist:
+            return Response(
+                {"error": "Appointment not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class LocationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List all service locations"""
+        locations = Location.objects.all().order_by("name")
+        serializer = LocationSerializer(locations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LocationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, location_id):
+        """Get a specific location"""
+        try:
+            location = Location.objects.get(id=location_id)
+            serializer = LocationSerializer(location)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Location.DoesNotExist:
+            return Response(
+                {"error": "Location not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )

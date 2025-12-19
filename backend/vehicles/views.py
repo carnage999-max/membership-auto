@@ -5,8 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.utils import timezone
 from datetime import datetime
-from .models import Vehicle, TelematicsSnapshot
-from .serializers import VehicleSerializer, TelemetryBatchSerializer, TelematicsSnapshotSerializer
+from .models import Vehicle, TelematicsSnapshot, FuelLog
+from .serializers import (
+    VehicleSerializer,
+    TelemetryBatchSerializer,
+    TelematicsSnapshotSerializer,
+)
 
 
 class VehicleListCreateView(APIView):
@@ -19,12 +23,62 @@ class VehicleListCreateView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        """Add a new vehicle"""
+        """Add a new vehicle and auto-create service schedules"""
         serializer = VehicleSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            vehicle = serializer.save(user=request.user)
+
+            # Auto-create standard service schedules for this vehicle
+            from services.views import create_default_service_schedules
+
+            create_default_service_schedules(vehicle)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VehicleDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        """Get a specific vehicle"""
+        try:
+            vehicle = Vehicle.objects.get(id=id, user=request.user)
+            serializer = VehicleSerializer(vehicle)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"error": "Vehicle not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+    def put(self, request, id):
+        """Update a vehicle"""
+        try:
+            vehicle = Vehicle.objects.get(id=id, user=request.user)
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"error": "Vehicle not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = VehicleSerializer(vehicle, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id):
+        """Delete a vehicle"""
+        try:
+            vehicle = Vehicle.objects.get(id=id, user=request.user)
+            vehicle.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"error": "Vehicle not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
 
 class VehicleLinkDongleView(APIView):
@@ -81,15 +135,21 @@ class TelematicsUploadView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
-        start_timestamp = timezone.make_aware(datetime.fromtimestamp(data["startTimestamp"] / 1000))
-        end_timestamp = timezone.make_aware(datetime.fromtimestamp(data["endTimestamp"] / 1000))
+        start_timestamp = timezone.make_aware(
+            datetime.fromtimestamp(data["startTimestamp"] / 1000)
+        )
+        end_timestamp = timezone.make_aware(
+            datetime.fromtimestamp(data["endTimestamp"] / 1000)
+        )
 
         # Process samples if provided
         samples = data.get("samples", [])
         snapshots = []
         for sample in samples:
             sample_timestamp = sample.get("t", data["startTimestamp"])
-            timestamp = timezone.make_aware(datetime.fromtimestamp(sample_timestamp / 1000))
+            timestamp = timezone.make_aware(
+                datetime.fromtimestamp(sample_timestamp / 1000)
+            )
             snapshot = TelematicsSnapshot(
                 vehicle=vehicle,
                 timestamp=timestamp,
@@ -120,3 +180,93 @@ class TelematicsUploadView(APIView):
             {"message": "Telemetry batch accepted"},
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class FuelLogListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List fuel logs for user's vehicles"""
+        vehicle_id = request.query_params.get("vehicle_id")
+
+        user_vehicles = Vehicle.objects.filter(user=request.user)
+
+        if vehicle_id:
+            fuel_logs = FuelLog.objects.filter(
+                vehicle__id=vehicle_id, vehicle__in=user_vehicles
+            )
+        else:
+            fuel_logs = FuelLog.objects.filter(vehicle__in=user_vehicles)
+
+        from .serializers import FuelLogSerializer
+
+        serializer = FuelLogSerializer(fuel_logs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Create a new fuel log entry"""
+        vehicle_id = request.data.get("vehicle")
+
+        # Verify vehicle belongs to user
+        try:
+            vehicle = Vehicle.objects.get(id=vehicle_id, user=request.user)
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"error": "Vehicle not found or does not belong to you"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        from .serializers import FuelLogSerializer
+
+        serializer = FuelLogSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FuelLogDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Get a specific fuel log"""
+        try:
+            fuel_log = FuelLog.objects.get(pk=pk, vehicle__user=request.user)
+        except FuelLog.DoesNotExist:
+            return Response(
+                {"error": "Fuel log not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        from .serializers import FuelLogSerializer
+
+        serializer = FuelLogSerializer(fuel_log)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        """Update a fuel log"""
+        try:
+            fuel_log = FuelLog.objects.get(pk=pk, vehicle__user=request.user)
+        except FuelLog.DoesNotExist:
+            return Response(
+                {"error": "Fuel log not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        from .serializers import FuelLogSerializer
+
+        serializer = FuelLogSerializer(fuel_log, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        """Delete a fuel log"""
+        try:
+            fuel_log = FuelLog.objects.get(pk=pk, vehicle__user=request.user)
+        except FuelLog.DoesNotExist:
+            return Response(
+                {"error": "Fuel log not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        fuel_log.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

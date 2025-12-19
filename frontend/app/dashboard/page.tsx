@@ -1,348 +1,444 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/context/AuthContext';
+import { tokenStorage } from '@/lib/auth/tokenStorage';
+import vehicleService, { Vehicle } from '@/lib/api/vehicleService';
+import appointmentService, { Appointment } from '@/lib/api/appointmentService';
+import offerService, { Offer } from '@/lib/api/offerService';
+import {
+  Car,
+  Calendar,
+  Tag,
+  Users,
+  MapPin,
+  MessageCircle,
+  HelpCircle,
+  Upload,
+  Wrench,
+  DollarSign,
+  TrendingUp,
+  Phone,
+  Heart,
+  Activity,
+} from 'lucide-react';
 
 export default function DashboardPage() {
-  // In production, this would come from authentication context
-  const [user] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    membership: {
-      plan: "Premium",
-      renewalDate: "2024-12-31",
-      status: "Active",
-    },
-  });
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingsData, setSavingsData] = useState<{
+    totalSaved: number;
+    thisMonth: number;
+    servicesUsed: number;
+  } | null>(null);
 
-  const [vehicles] = useState([
-    {
-      id: 1,
-      make: "Honda",
-      model: "Civic",
-      year: 2020,
-      vin: "1HGBH41JXMN109186",
-      odometer: 45000,
-    },
-  ]);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const [upcomingServices] = useState([
-    {
-      id: 1,
-      date: "2024-02-15",
-      service: "Oil Change & Tire Rotation",
-      location: "Main Service Center",
-      duration: "30 minutes",
-    },
-  ]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [vehiclesData, appointmentsData, offersData] = await Promise.all([
+        vehicleService.getVehicles(),
+        appointmentService.getUpcomingAppointments(),
+        offerService.getOffers(),
+      ]);
+      setVehicles(vehiclesData);
+      setAppointments(appointmentsData);
+      setOffers(offersData.slice(0, 3)); // Show first 3 offers
+      
+      // Fetch savings data
+      await loadSavingsData();
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const [serviceHistory] = useState([
-    {
-      id: 1,
-      date: "2024-01-10",
-      service: "Brake Pad Replacement",
-      cost: "$0.00",
-      savings: "$450.00",
-    },
-    {
-      id: 2,
-      date: "2023-12-05",
-      service: "Transmission Fluid Flush",
-      cost: "$0.00",
-      savings: "$280.00",
-    },
-  ]);
+  const loadSavingsData = async () => {
+    try {
+      const token = tokenStorage.getAccessToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/savings/`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
 
-  const totalSavings = 3281;
+      if (response.ok) {
+        const data = await response.json();
+        const currentMonth = new Date().toLocaleString('default', { month: 'short' });
+        const thisMonthData = data.monthly_breakdown.find((m: any) => m.month === currentMonth);
+        
+        setSavingsData({
+          totalSaved: data.total_saved || 0,
+          thisMonth: thisMonthData?.amount || 0,
+          servicesUsed: data.services_used || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load savings data:', error);
+      setSavingsData({ totalSaved: 0, thisMonth: 0, servicesUsed: 0 });
+    }
+  };
+
+  const quickActions = [
+    { icon: Tag, label: 'Special Offers', href: '/dashboard/offers', color: '#CBA86E' },
+    { icon: Car, label: 'My Vehicles', href: '/dashboard/vehicles', color: '#CBA86E' },
+    { icon: Calendar, label: 'Appointments', href: '/dashboard/appointments', color: '#CBA86E' },
+    { icon: Wrench, label: 'Service Schedule', href: '/dashboard/service-schedule', color: '#CBA86E' },
+    { icon: TrendingUp, label: 'Mileage Tracker', href: '/dashboard/mileage', color: '#CBA86E' },
+    { icon: MapPin, label: 'Parking Reminder', href: '/dashboard/parking', color: '#CBA86E' },
+    { icon: Users, label: 'Refer Friends', href: '/dashboard/referrals', color: '#CBA86E' },
+    { icon: MessageCircle, label: 'Support Chat', href: '/dashboard/chat', color: '#CBA86E' },
+    { icon: HelpCircle, label: 'Help & FAQ', href: '/dashboard/help', color: '#CBA86E' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-[#CBA86E] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* Header */}
-      <header className="bg-[#0d0d0d] border-b border-[var(--border-color)]">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-black flex items-center justify-center">
-                <Image
-                  src="/images/logo.jpeg"
-                  alt="Membership Auto logo"
-                  width={40}
-                  height={40}
-                  className="object-contain"
-                />
-              </div>
-              <span className="text-[var(--gold)] font-bold text-xl">
-                Membership Auto
-              </span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <button className="text-[var(--text-secondary)] hover:text-[var(--gold)] transition-colors">
-                Settings
-              </button>
-              <button className="px-4 py-2 bg-[var(--error)] text-white rounded-full hover:bg-[#f06561] transition-colors">
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Welcome Panel */}
-      <section className="bg-[#111111] py-12 border-b border-[var(--border-color)]">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-[var(--gold)] mb-2">
-            Welcome back, {user.name}!
+    <div className="bg-[#0D0D0D]">
+      {/* Welcome Banner */}
+      <div className="bg-linear-to-r from-[#1A1A1A] to-[#0D0D0D] border-b border-[#2A2A2A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            Welcome back, {user?.name || user?.email?.split('@')[0]}!
           </h1>
-          <p className="text-xl text-[var(--text-secondary)]">
-            Here's everything about your vehicle in one place.
+          <p className="text-[#B3B3B3]">
+            Everything about your vehicles in one place
           </p>
         </div>
-      </section>
+      </div>
 
-      {/* Main Content */}
-      <section className="py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Left Column - Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Gamification Panel */}
-              <div className="bg-gradient-to-br from-[#cba86e] to-[#e0bf7f] rounded-lg p-8 text-[#0d0d0d] shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-lg mb-2 font-semibold">Total Savings</p>
-                    <p className="text-5xl font-bold">
-                      ${totalSavings.toLocaleString()}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Savings Tracker - Gamification */}
+            {savingsData && savingsData.totalSaved > 0 && (
+              <div className="bg-gradient-to-r from-[#CBA86E]/20 to-[#CBA86E]/5 border border-[#CBA86E] rounded-lg p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <DollarSign className="text-[#CBA86E]" size={28} />
+                      <h2 className="text-2xl font-bold text-white">You've Saved</h2>
+                    </div>
+                    <p className="text-5xl font-bold text-[#CBA86E] mb-2">
+                      ${savingsData.totalSaved.toFixed(2)}
                     </p>
-                    <p className="text-sm mt-2 opacity-90">
-                      in repair costs since joining!
+                    <p className="text-[#B3B3B3] text-sm mb-4">
+                      in repair costs since joining Membership Auto
                     </p>
-                  </div>
-                  <div className="text-6xl">💰</div>
-                </div>
-              </div>
-
-              {/* Vehicle Profile */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-[var(--foreground)]">
-                    Vehicle Profile
-                  </h2>
-                  <button className="px-4 py-2 bg-[var(--gold)] text-[#0d0d0d] rounded-full hover:bg-[#d8b87f] text-sm transition-colors">
-                    Add Vehicle
-                  </button>
-                </div>
-                {vehicles.map((vehicle) => (
-                  <div
-                    key={vehicle.id}
-                    className="border border-[var(--border-color)] rounded-lg p-6 bg-[#111111]"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white mb-2">
-                          {vehicle.year} {vehicle.make} {vehicle.model}
-                        </h3>
-                        <div className="space-y-2 text-sm text-[var(--text-secondary)]">
-                          <p>
-                            <strong>VIN:</strong> {vehicle.vin}
-                          </p>
-                          <p>
-                            <strong>Odometer:</strong>{" "}
-                            {vehicle.odometer.toLocaleString()} miles
-                          </p>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="bg-[#1A1A1A]/50 rounded-lg p-3">
+                        <p className="text-xs text-[#B3B3B3] mb-1">This Month</p>
+                        <p className="text-xl font-bold text-white">
+                          ${savingsData.thisMonth.toFixed(2)}
+                        </p>
                       </div>
-                      <button className="text-[var(--gold)] hover:text-[#d8b87f] font-semibold">
-                        Edit
-                      </button>
+                      <div className="bg-[#1A1A1A]/50 rounded-lg p-3">
+                        <p className="text-xs text-[#B3B3B3] mb-1">Services Used</p>
+                        <p className="text-xl font-bold text-white">{savingsData.servicesUsed}</p>
+                      </div>
                     </div>
                   </div>
+                  <Link
+                    href="/dashboard/savings"
+                    className="px-4 py-2 bg-[#CBA86E] text-[#0D0D0D] rounded-lg hover:bg-[#B89860] transition-colors font-semibold text-sm"
+                  >
+                    View Details
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Car className="text-[#CBA86E]" size={24} />
+                  <h3 className="text-[#B3B3B3] font-medium">Vehicles</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">{vehicles.length}</p>
+              </div>
+
+              <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Calendar className="text-[#CBA86E]" size={24} />
+                  <h3 className="text-[#B3B3B3] font-medium">Appointments</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">{appointments.length}</p>
+              </div>
+
+              <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Tag className="text-[#CBA86E]" size={24} />
+                  <h3 className="text-[#B3B3B3] font-medium">Active Offers</h3>
+                </div>
+                <p className="text-3xl font-bold text-white">{offers.length}</p>
+              </div>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {quickActions.map((action, idx) => (
+                  <Link
+                    key={idx}
+                    href={action.href}
+                    className="flex flex-col items-center gap-3 p-6 bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg hover:border-[#CBA86E] transition-all group"
+                  >
+                    <div className="w-12 h-12 bg-[#CBA86E]/10 rounded-lg flex items-center justify-center group-hover:bg-[#CBA86E]/20 transition-colors">
+                      <action.icon className="text-[#CBA86E]" size={24} />
+                    </div>
+                    <span className="text-[#B3B3B3] text-sm text-center group-hover:text-white transition-colors">
+                      {action.label}
+                    </span>
+                  </Link>
                 ))}
               </div>
+            </div>
 
-              {/* Upcoming Scheduled Services */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
-                  Upcoming Scheduled Services
-                </h2>
-                {upcomingServices.length > 0 ? (
-                  <div className="space-y-4">
-                    {upcomingServices.map((service) => (
-                      <div
-                        key={service.id}
-                        className="border border-[var(--border-color)] rounded-lg p-4 bg-[#111111]"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-semibold text-white mb-1">
-                              {service.service}
-                            </h3>
-                            <p className="text-sm text-[var(--text-secondary)]">
-                              {service.location}
-                            </p>
-                            <p className="text-sm text-[var(--text-secondary)]">
-                              {service.date} • {service.duration}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button className="px-4 py-2 text-sm border border-[var(--border-color)] rounded-lg hover:bg-[#1a1a1a] transition-colors">
-                              Reschedule
-                            </button>
-                            <button className="px-4 py-2 text-sm bg-[var(--gold)] text-[#0d0d0d] rounded-lg hover:bg-[#d8b87f] transition-colors">
-                              View Details
-                            </button>
-                          </div>
+            {/* Next Appointment */}
+            {appointments.length > 0 && (
+              <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white">Next Appointment</h2>
+                  <Link
+                    href="/dashboard/appointments"
+                    className="text-[#CBA86E] hover:text-[#B89860] transition-colors text-sm"
+                  >
+                    View All
+                  </Link>
+                </div>
+                <div className="bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#CBA86E]/10 rounded-lg flex items-center justify-center shrink-0">
+                      <Calendar className="text-[#CBA86E]" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        {new Date(appointments[0].startTime).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </h3>
+                      <p className="text-[#B3B3B3] text-sm mb-2">
+                        {new Date(appointments[0].startTime).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      {appointments[0].location && (
+                        <div className="flex items-center gap-2 text-[#707070] text-sm">
+                          <MapPin size={14} />
+                          <span>{appointments[0].location.name}</span>
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-[var(--text-secondary)]">
-                    No upcoming services scheduled.
-                  </p>
-                )}
+                </div>
+              </div>
+            )}
+
+            {/* My Vehicles */}
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">My Vehicles</h2>
                 <Link
-                  href="/appointments"
-                  className="mt-4 inline-block text-[var(--gold)] hover:text-[#d8b87f] font-semibold"
+                  href="/dashboard/vehicles"
+                  className="text-[#CBA86E] hover:text-[#B89860] transition-colors text-sm"
                 >
-                  Schedule Service →
+                  Manage
                 </Link>
               </div>
-
-              {/* Service History */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
-                  Service History
-                </h2>
+              {vehicles.length === 0 ? (
+                <div className="text-center py-8">
+                  <Car className="mx-auto text-[#707070] mb-3" size={48} />
+                  <p className="text-[#B3B3B3] mb-4">No vehicles added yet</p>
+                  <Link
+                    href="/dashboard/vehicles"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#CBA86E] text-[#0D0D0D] font-semibold rounded-lg hover:bg-[#B89860] transition-colors"
+                  >
+                    Add Your First Vehicle
+                  </Link>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  {serviceHistory.map((service) => (
+                  {vehicles.slice(0, 2).map((vehicle) => (
                     <div
-                      key={service.id}
-                      className="border border-[var(--border-color)] rounded-lg p-4 bg-[#111111]"
+                      key={vehicle.id}
+                      className="bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg overflow-hidden"
                     >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-white mb-1">
-                            {service.service}
+                      {/* Vehicle Photo */}
+                      <div className="flex items-center gap-4 p-4">
+                        {vehicle.photoUrl ? (
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                            <Image
+                              src={vehicle.photoUrl}
+                              alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 bg-[#CBA86E]/10 rounded-lg flex items-center justify-center shrink-0">
+                            <Car className="text-[#CBA86E]" size={24} />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="text-white font-semibold">
+                            {vehicle.year} {vehicle.make} {vehicle.model}
                           </h3>
-                          <p className="text-sm text-[var(--text-secondary)]">
-                            {service.date}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-[var(--gold)]">
-                            {service.cost}
-                          </p>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            Saved {service.savings}
-                          </p>
+                          {vehicle.odometer && (
+                            <p className="text-[#707070] text-sm">
+                              {vehicle.odometer.toLocaleString()} miles
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Vehicle Health Status */}
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Activity className="text-[#CBA86E]" size={24} />
+                  Vehicle Health
+                </h2>
                 <Link
-                  href="/history"
-                  className="mt-4 inline-block text-[var(--gold)] hover:text-[#d8b87f] font-semibold"
+                  href="/dashboard/health"
+                  className="text-[#CBA86E] hover:text-[#B89860] transition-colors text-sm"
                 >
-                  View Full History →
+                  Details
+                </Link>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#B3B3B3] text-sm">Overall Status</span>
+                  <span className="px-3 py-1 bg-green-900/30 text-green-400 rounded-full text-xs font-semibold">
+                    Healthy
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#B3B3B3]">Engine</span>
+                    <span className="text-green-400">✓ Good</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#B3B3B3]">Brakes</span>
+                    <span className="text-green-400">✓ Good</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#B3B3B3]">Tires</span>
+                    <span className="text-yellow-400">⚠ Check Soon</span>
+                  </div>
+                </div>
+                <Link
+                  href="/dashboard/service-schedule"
+                  className="block w-full px-4 py-2 bg-[#CBA86E] text-[#0D0D0D] rounded-lg hover:bg-[#B89860] transition-colors text-center font-semibold text-sm mt-4"
+                >
+                  View Service Schedule
                 </Link>
               </div>
             </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="space-y-6">
-              {/* Plan Tier & Billing */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <h2 className="text-xl font-bold text-[var(--foreground)] mb-4">
-                  Membership Details
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-[var(--text-secondary)] mb-1">
-                      Plan
-                    </p>
-                    <p className="text-lg font-semibold text-[var(--foreground)]">
-                      {user.membership.plan}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[var(--text-secondary)] mb-1">
-                      Status
-                    </p>
-                    <p className="text-lg font-semibold text-[var(--success)]">
-                      {user.membership.status}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-[var(--text-secondary)] mb-1">
-                      Renewal Date
-                    </p>
-                    <p className="text-lg font-semibold text-[var(--foreground)]">
-                      {user.membership.renewalDate}
-                    </p>
-                  </div>
-                  <button className="w-full px-4 py-2 bg-[#111111] text-[var(--foreground)] rounded-lg hover:bg-[#1a1a1a] font-semibold border border-[var(--border-color)] transition-colors">
-                    Manage Billing
-                  </button>
-                </div>
+            {/* Special Offers */}
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Special Offers</h2>
+                <Link
+                  href="/dashboard/offers"
+                  className="text-[#CBA86E] hover:text-[#B89860] transition-colors text-sm"
+                >
+                  View All
+                </Link>
               </div>
-
-              {/* Quick Actions */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <h2 className="text-xl font-bold text-[var(--foreground)] mb-4">
-                  Quick Actions
-                </h2>
+              {offers.length === 0 ? (
+                <p className="text-[#B3B3B3] text-sm">No offers available</p>
+              ) : (
                 <div className="space-y-3">
-                  <button className="w-full px-4 py-3 bg-[var(--gold)] text-[#0d0d0d] rounded-lg hover:bg-[#d8b87f] font-semibold text-left transition-colors">
-                    Request a Repair
-                  </button>
-                  <button className="w-full px-4 py-3 bg-[#111111] text-[var(--foreground)] rounded-lg hover:bg-[#1a1a1a] font-semibold text-left border border-[var(--border-color)] transition-colors">
-                    Upload Photos or Videos
-                  </button>
-                  <button className="w-full px-4 py-3 bg-[#111111] text-[var(--foreground)] rounded-lg hover:bg-[#1a1a1a] font-semibold text-left border border-[var(--border-color)] transition-colors">
-                    Track Open Repairs
-                  </button>
-                  <Link
-                    href="/chat"
-                    className="block w-full px-4 py-3 bg-[#111111] text-[var(--foreground)] rounded-lg hover:bg-[#1a1a1a] font-semibold text-left border border-[var(--border-color)] transition-colors"
-                  >
-                    Chat With Your Advisor
-                  </Link>
+                  {offers.map((offer) => (
+                    <div
+                      key={offer.id}
+                      className="bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg p-4"
+                    >
+                      <h3 className="text-white font-semibold text-sm mb-2">{offer.title}</h3>
+                      <p className="text-[#707070] text-xs line-clamp-2">{offer.description}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Help & Support */}
-              <div className="bg-[var(--surface)] rounded-lg shadow-lg p-6 border border-[var(--border-color)]">
-                <h2 className="text-xl font-bold text-[var(--foreground)] mb-4">
-                  Need Help?
-                </h2>
-                <div className="space-y-3">
-                  <Link
-                    href="/help"
-                    className="block text-[var(--gold)] hover:text-[#d8b87f] font-semibold"
-                  >
-                    Help Center
-                  </Link>
-                  <Link
-                    href="/contact"
-                    className="block text-[var(--gold)] hover:text-[#d8b87f] font-semibold"
-                  >
-                    Contact Support
-                  </Link>
-                  <Link
-                    href="/referrals"
-                    className="block text-[var(--gold)] hover:text-[#d8b87f] font-semibold"
-                  >
-                    Refer a Friend
-                  </Link>
+            {/* Contact Support */}
+            <div className="bg-linear-to-br from-[#CBA86E]/20 to-[#1A1A1A] border border-[#CBA86E] rounded-lg p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Need Help?</h2>
+              <p className="text-[#B3B3B3] text-sm mb-6">
+                Our team is here to assist you with any questions or concerns.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/contact"
+                  className="flex items-center gap-3 p-3 bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg hover:border-[#CBA86E] transition-colors text-[#B3B3B3] hover:text-white"
+                >
+                  <MessageCircle size={20} />
+                  <span className="text-sm">Live Chat</span>
+                </Link>
+                <Link
+                  href="/contact"
+                  className="flex items-center gap-3 p-3 bg-[#0D0D0D] border border-[#2A2A2A] rounded-lg hover:border-[#CBA86E] transition-colors text-[#B3B3B3] hover:text-white"
+                >
+                  <Phone size={20} />
+                  <span className="text-sm">Call Support</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Membership Status */}
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Membership</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[#707070] text-sm mb-1">Status</p>
+                  <p className="text-white font-semibold">Active</p>
+                </div>
+                <div>
+                  <p className="text-[#707070] text-sm mb-1">Email</p>
+                  <p className="text-white font-semibold text-sm">{user?.email}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
-

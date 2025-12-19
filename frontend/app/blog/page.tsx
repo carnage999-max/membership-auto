@@ -1,7 +1,42 @@
+'use client';
+
+import { useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
 
 export default function BlogPage() {
+  const [email, setEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      setSubscribeStatus('error');
+      setErrorMessage('Please enter a valid email address');
+      return;
+    }
+
+    setSubscribeStatus('loading');
+    setErrorMessage('');
+
+    try {
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated API call
+      
+      setSubscribeStatus('success');
+      setEmail('');
+      
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setSubscribeStatus('idle');
+      }, 3000);
+    } catch (error) {
+      setSubscribeStatus('error');
+      setErrorMessage('Failed to subscribe. Please try again.');
+    }
+  };
   const articles = [
     {
       title: "Why Traditional Repairs Are Dying",
@@ -119,16 +154,35 @@ export default function BlogPage() {
           <p className="text-xl text-[var(--text-secondary)] mb-8 max-w-2xl mx-auto">
             Get the latest tips, industry news, and exclusive member content delivered to your inbox.
           </p>
-          <div className="max-w-md mx-auto flex gap-4">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-6 py-4 rounded-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--foreground)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
-            />
-            <button className="px-8 py-4 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-full hover:bg-[#d8b87f] transition-colors">
-              Subscribe
-            </button>
-          </div>
+          <form onSubmit={handleSubscribe} className="max-w-md mx-auto">
+            <div className="flex gap-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                disabled={subscribeStatus === 'loading'}
+                className="flex-1 px-6 py-4 rounded-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--foreground)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--gold)] disabled:opacity-50"
+              />
+              <button 
+                type="submit"
+                disabled={subscribeStatus === 'loading'}
+                className="px-8 py-4 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-full hover:bg-[#d8b87f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {subscribeStatus === 'loading' ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </div>
+            {subscribeStatus === 'success' && (
+              <p className="mt-4 text-green-400 text-sm">
+                ✓ Successfully subscribed! Check your email for confirmation.
+              </p>
+            )}
+            {subscribeStatus === 'error' && (
+              <p className="mt-4 text-red-400 text-sm">
+                {errorMessage}
+              </p>
+            )}
+          </form>
         </div>
       </section>
     </div>

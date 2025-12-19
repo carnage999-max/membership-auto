@@ -19,10 +19,15 @@ class Vehicle(models.Model):
     trim = models.TextField(blank=True, null=True)
     year = models.IntegerField(blank=True, null=True)
     license_plate = models.TextField(blank=True, null=True)
-    odometer = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    odometer = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     dongle_id = models.TextField(blank=True, null=True)
-    dongle_connection_type = models.TextField(choices=CONNECTION_TYPES, blank=True, null=True)
+    dongle_connection_type = models.TextField(
+        choices=CONNECTION_TYPES, blank=True, null=True
+    )
     fuel_type = models.TextField(blank=True, null=True)
+    photo_url = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -37,11 +42,19 @@ class Vehicle(models.Model):
 
 class TelematicsSnapshot(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="telematics_snapshots")
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name="telematics_snapshots"
+    )
     timestamp = models.DateTimeField(blank=True, null=True)
-    odometer = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    fuel_used = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    speed_avg = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    odometer = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    fuel_used = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    speed_avg = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     dtc = models.JSONField(default=list, blank=True)
     raw = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -58,10 +71,16 @@ class TelematicsSnapshot(models.Model):
 
 class FuelLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="fuel_logs")
+    vehicle = models.ForeignKey(
+        Vehicle, on_delete=models.CASCADE, related_name="fuel_logs"
+    )
     timestamp = models.DateTimeField(blank=True, null=True)
-    odometer = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    gallons = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    odometer = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    gallons = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     mpg = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
