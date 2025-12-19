@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { MessageCircle, Phone, PhoneCall } from "lucide-react";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -11,12 +12,45 @@ export default function ContactPage() {
     userType: "non-member",
     message: "",
   });
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Form submitted:", formData);
-    alert("Thank you for your message! We'll get back to you soon.");
+    setSubmitStatus('loading');
+    setErrorMessage('');
+
+    try {
+      // TODO: Replace with actual API call to backend
+      // const response = await fetch('/api/contact', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(formData)
+      // });
+      
+      // Simulated API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log("Form submitted:", formData);
+      setSubmitStatus('success');
+      
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        userType: "non-member",
+        message: "",
+      });
+
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setSubmitStatus('idle');
+      }, 5000);
+    } catch (error) {
+      setSubmitStatus('error');
+      setErrorMessage('Failed to send message. Please try again or contact us directly.');
+    }
   };
 
   const handleChange = (
@@ -48,7 +82,9 @@ export default function ContactPage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
             {/* Live Chat */}
             <div className="bg-[var(--surface)] rounded-lg p-8 shadow-lg text-center border border-[var(--border-color)]">
-              <div className="text-5xl mb-4">💬</div>
+              <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-blue-500/10">
+                <MessageCircle className="w-10 h-10 text-blue-400" strokeWidth={2} />
+              </div>
               <h3 className="text-xl font-semibold text-white mb-3">Live Chat</h3>
               <p className="text-[var(--text-secondary)] mb-4">Chat with us in real-time</p>
               <button className="w-full px-6 py-3 bg-[var(--gold)] text-[#0d0d0d] rounded-full font-semibold hover:bg-[#d8b87f] transition-colors">
@@ -58,7 +94,9 @@ export default function ContactPage() {
 
             {/* Schedule Call */}
             <div className="bg-[var(--surface)] rounded-lg p-8 shadow-lg text-center border border-[var(--border-color)]">
-              <div className="text-5xl mb-4">📞</div>
+              <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/10">
+                <Phone className="w-10 h-10 text-green-400" strokeWidth={2} />
+              </div>
               <h3 className="text-xl font-semibold text-white mb-3">Schedule Call</h3>
               <p className="text-[var(--text-secondary)] mb-4">Book a time that works for you</p>
               <button className="w-full px-6 py-3 bg-[var(--gold)] text-[#0d0d0d] rounded-full font-semibold hover:bg-[#d8b87f] transition-colors">
@@ -68,7 +106,9 @@ export default function ContactPage() {
 
             {/* Request Callback */}
             <div className="bg-[var(--surface)] rounded-lg p-8 shadow-lg text-center border border-[var(--border-color)]">
-              <div className="text-5xl mb-4">📲</div>
+              <div className="flex items-center justify-center w-20 h-20 mx-auto mb-4 rounded-full bg-purple-500/10">
+                <PhoneCall className="w-10 h-10 text-purple-400" strokeWidth={2} />
+              </div>
               <h3 className="text-xl font-semibold text-white mb-3">Request Callback</h3>
               <p className="text-[var(--text-secondary)] mb-4">We'll call you back</p>
               <button className="w-full px-6 py-3 bg-[var(--gold)] text-[#0d0d0d] rounded-full font-semibold hover:bg-[#d8b87f] transition-colors">
@@ -159,10 +199,27 @@ export default function ContactPage() {
 
                 <button
                   type="submit"
-                  className="w-full px-8 py-4 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-full hover:bg-[#d8b87f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  disabled={submitStatus === 'loading'}
+                  className="w-full px-8 py-4 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-full hover:bg-[#d8b87f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  Send Message
+                  {submitStatus === 'loading' ? 'Sending...' : 'Send Message'}
                 </button>
+
+                {submitStatus === 'success' && (
+                  <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
+                    <p className="text-green-400 font-medium">
+                      ✓ Thank you for your message! We'll get back to you soon.
+                    </p>
+                  </div>
+                )}
+
+                {submitStatus === 'error' && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-center">
+                    <p className="text-red-400 font-medium">
+                      {errorMessage}
+                    </p>
+                  </div>
+                )}
               </form>
             </div>
           </div>
@@ -174,12 +231,19 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-[var(--gold)] mb-8">Other Ways to Reach Us</h2>
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-8">
               <div>
                 <h3 className="text-xl font-semibold text-white mb-4">Phone</h3>
-                <a href="tel:+1-800-MEMBERSHIP" className="text-[var(--gold)] hover:text-[#d8b87f] text-lg transition-colors">
-                  1-800-MEMBERSHIP
+                <a href="tel:+12079471999" className="text-[var(--gold)] hover:text-[#d8b87f] text-lg transition-colors">
+                  207-947-1999
                 </a>
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-4">Address</h3>
+                <div className="text-[var(--gold)] text-lg">
+                  P.O. Box 52<br />
+                  Detroit, ME. 04929
+                </div>
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-white mb-4">Email</h3>

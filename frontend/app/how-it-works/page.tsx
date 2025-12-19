@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileText, Car, CheckCircle, CalendarCheck, DollarSign } from "lucide-react";
 
 export default function HowItWorksPage() {
   const steps = [
@@ -6,31 +7,31 @@ export default function HowItWorksPage() {
       number: 1,
       title: "Pick Your Plan",
       description: "Choose the perfect tier for your vehicle - from compact cars to luxury vehicles.",
-      icon: "📋",
+      icon: FileText,
     },
     {
       number: 2,
       title: "Qualify Your Vehicle",
       description: "Quick vehicle inspection to ensure your car qualifies for coverage.",
-      icon: "🚗",
+      icon: Car,
     },
     {
       number: 3,
       title: "Start Using Your Benefits",
       description: "Begin using your membership immediately for all covered services.",
-      icon: "✅",
+      icon: CheckCircle,
     },
     {
       number: 4,
       title: "Come In Anytime",
       description: "Schedule service when it's convenient for you - no appointments needed for most services.",
-      icon: "📅",
+      icon: CalendarCheck,
     },
     {
       number: 5,
       title: "Never Worry About the Cost",
       description: "All covered repairs and maintenance included. Just pay your monthly fee.",
-      icon: "💰",
+      icon: DollarSign,
     },
   ];
 
@@ -88,8 +89,8 @@ export default function HowItWorksPage() {
                   }`}
                 >
                   <div className="flex-shrink-0">
-                    <div className="w-32 h-32 bg-[var(--surface)] border border-[var(--gold)] rounded-full flex items-center justify-center text-6xl shadow-lg shadow-black/60">
-                      {step.icon}
+                    <div className="w-32 h-32 bg-[var(--surface)] border border-[var(--gold)] rounded-full flex items-center justify-center shadow-lg shadow-black/60">
+                      <step.icon className="w-16 h-16 text-[var(--gold)]" strokeWidth={2} />
                     </div>
                   </div>
                   <div className="flex-1 text-center md:text-left">

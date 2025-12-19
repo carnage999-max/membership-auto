@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { DollarSign, AlertTriangle, CreditCard, CheckCircle, Shield, FileText } from "lucide-react";
 
 export default function Home() {
   return (
@@ -94,17 +95,23 @@ export default function Home() {
             </h2>
             <div className="grid md:grid-cols-3 gap-8 mt-12">
               <div className="p-6 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
-                <div className="text-4xl mb-4">💸</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10">
+                  <DollarSign className="w-8 h-8 text-red-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-xl font-semibold text-white mb-2">Unpredictable repair bills</h3>
                 <p className="text-[var(--text-secondary)]">One day it's $200, the next it's $3,000. You never know what's coming.</p>
               </div>
               <div className="p-6 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
-                <div className="text-4xl mb-4">😤</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10">
+                  <AlertTriangle className="w-8 h-8 text-orange-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-xl font-semibold text-white mb-2">Dishonest mechanics</h3>
                 <p className="text-[var(--text-secondary)]">Being upsold on unnecessary repairs you don't actually need.</p>
               </div>
               <div className="p-6 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
-                <div className="text-4xl mb-4">⚠️</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10">
+                  <AlertTriangle className="w-8 h-8 text-yellow-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-xl font-semibold text-white mb-2">Delayed maintenance = dangerous cars</h3>
                 <p className="text-[var(--text-secondary)]">Putting off repairs because you can't afford them puts you at risk.</p>
               </div>
@@ -122,22 +129,30 @@ export default function Home() {
             </h2>
             <div className="grid md:grid-cols-2 gap-8 mt-12">
               <div className="p-8 rounded-lg bg-[var(--surface)] shadow-lg border border-[var(--border-color)]">
-                <div className="text-4xl mb-4">💰</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-[var(--gold)]/10">
+                  <CreditCard className="w-8 h-8 text-[var(--gold)]" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-semibold text-white mb-3">Monthly subscription plan</h3>
                 <p className="text-[var(--text-secondary)]">One predictable monthly fee. No surprises, no hidden costs.</p>
               </div>
               <div className="p-8 rounded-lg bg-[var(--surface)] shadow-lg border border-[var(--border-color)]">
-                <div className="text-4xl mb-4">✅</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-green-500/10">
+                  <CheckCircle className="w-8 h-8 text-green-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-semibold text-white mb-3">Covers all repairs & maintenance*</h3>
                 <p className="text-[var(--text-secondary)]">From oil changes to engine repairs, we've got you covered.</p>
               </div>
               <div className="p-8 rounded-lg bg-[var(--surface)] shadow-lg border border-[var(--border-color)]">
-                <div className="text-4xl mb-4">🚫</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10">
+                  <Shield className="w-8 h-8 text-blue-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-semibold text-white mb-3">No deductibles, no hassle</h3>
                 <p className="text-[var(--text-secondary)]">Just bring your car in. We handle the rest.</p>
               </div>
               <div className="p-8 rounded-lg bg-[var(--surface)] shadow-lg border border-[var(--border-color)]">
-                <div className="text-4xl mb-4">📋</div>
+                <div className="mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10">
+                  <FileText className="w-8 h-8 text-purple-400" strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-semibold text-white mb-3">Clear exclusions</h3>
                 <p className="text-[var(--text-secondary)]">*Exclusions: collision, glass, abuse, pre-existing damage</p>
               </div>
@@ -169,17 +184,22 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Watch: How Membership Auto Works in 90 Seconds
+              Watch: How Membership Auto Works
             </h2>
-            <div className="aspect-video bg-[#1a1a1a] rounded-lg border border-[var(--border-color)] flex items-center justify-center mt-8">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-[var(--gold)] rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-[#0d0d0d] ml-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-                <p className="text-[var(--text-secondary)]">Video placeholder - Add your video embed here</p>
-              </div>
+            <p className="text-xl text-[var(--text-secondary)] mb-8">
+              See how we're revolutionizing vehicle service and repair
+            </p>
+            <div className="aspect-video bg-[#1a1a1a] rounded-lg border border-[var(--border-color)] overflow-hidden shadow-2xl mt-8">
+              <iframe
+                width="100%"
+                height="100%"
+                src="https://www.youtube.com/embed/LhtJpv6-au8"
+                title="Membership Auto - How It Works"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>

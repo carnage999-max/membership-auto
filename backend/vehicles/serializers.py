@@ -3,10 +3,21 @@ from .models import Vehicle, TelematicsSnapshot, FuelLog
 
 
 class VehicleSerializer(serializers.ModelSerializer):
-    dongleId = serializers.CharField(source="dongle_id", read_only=True, allow_null=True)
-    dongleConnectionType = serializers.CharField(source="dongle_connection_type", read_only=True, allow_null=True)
-    licensePlate = serializers.CharField(source="license_plate", read_only=True, allow_null=True)
-    fuelType = serializers.CharField(source="fuel_type", read_only=True, allow_null=True)
+    dongleId = serializers.CharField(
+        source="dongle_id", read_only=True, allow_null=True
+    )
+    dongleConnectionType = serializers.CharField(
+        source="dongle_connection_type", read_only=True, allow_null=True
+    )
+    licensePlate = serializers.CharField(
+        source="license_plate", allow_blank=True, allow_null=True, required=False
+    )
+    fuelType = serializers.CharField(
+        source="fuel_type", allow_blank=True, allow_null=True, required=False
+    )
+    photoUrl = serializers.CharField(
+        source="photo_url", allow_blank=True, allow_null=True, required=False
+    )
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -24,9 +35,16 @@ class VehicleSerializer(serializers.ModelSerializer):
             "dongleId",
             "dongleConnectionType",
             "fuelType",
+            "photoUrl",
             "createdAt",
         ]
-        read_only_fields = ["id", "user", "createdAt"]
+        read_only_fields = [
+            "id",
+            "user",
+            "createdAt",
+            "dongleId",
+            "dongleConnectionType",
+        ]
 
 
 class TelemetryBatchSerializer(serializers.Serializer):
@@ -70,4 +88,3 @@ class FuelLogSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
-

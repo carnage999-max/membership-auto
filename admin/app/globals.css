@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0d0d0d;
+  --color-foreground: #ffffff;
+  --color-surface: #1a1a1a;
+  --color-border: #2a2a2a;
+  --color-gold: #cba86e;
+  --color-text-secondary: #b3b3b3;
+  --color-text-muted: #707070;
+  --color-success: #4caf50;
+  --color-error: #dd4a48;
+  --color-warning: #ffb74d;
+  --color-info: #64b5f6;
+  
+  --font-sans: var(--font-geist-sans, system-ui, -apple-system, sans-serif);
+  --font-mono: var(--font-geist-mono, monospace);
+}
+
+/* Membership Auto Admin Color System */
+:root {
+  --background: #0d0d0d;
+  --foreground: #ffffff;
+  --surface: #1a1a1a;
+  --border-color: #2a2a2a;
+  --gold: #cba86e;
+  --text-secondary: #b3b3b3;
+  --text-muted: #707070;
+  --success: #4caf50;
+  --error: #dd4a48;
+  --warning: #ffb74d;
+  --info: #64b5f6;
+}
+
+body {
+  background-color: #0d0d0d;
+  color: #ffffff;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Article Content Styles (match frontend) */
+.article-content {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  line-height: 1.75;
+}
+
+.article-content h2 {
+  color: var(--gold);
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.article-content ul,
+.article-content ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  list-style-position: outside;
+}
+
+.article-content ul {
+  list-style-type: disc;
+}
+
+.article-content ol {
+  list-style-type: decimal;
+}
+
+.article-content li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.article-content strong {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.article-content a {
+  color: var(--gold);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.article-content a:hover {
+  color: #d8b87f;
+}
+
+/* Toast Animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
