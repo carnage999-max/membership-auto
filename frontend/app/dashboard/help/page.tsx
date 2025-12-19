@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { HelpCircle, ChevronDown, Phone, Mail, MessageSquare, Book, Shield, Car, Wrench, CreditCard, Calendar, Users, ExternalLink } from 'lucide-react';
 import Link from 'next/link';

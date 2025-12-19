@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Clock, Camera, Bell, Trash2, Car, Timer, X, Play, Pause, RotateCcw } from 'lucide-react';
 import { tokenStorage } from '@/lib/auth/tokenStorage';

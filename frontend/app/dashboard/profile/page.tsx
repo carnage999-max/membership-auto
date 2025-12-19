@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { User, Mail, Phone, CreditCard, Bell, Lock, Save, Edit2, X } from 'lucide-react';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
