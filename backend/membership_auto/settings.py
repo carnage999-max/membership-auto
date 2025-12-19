@@ -30,7 +30,14 @@ SECRET_KEY = "django-insecure-t9m!t+c63x+n+9g$6+#vx-j6r#$23gqr&%#8)_o#88ophfab=(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "membershipauto.com",
+    "www.membershipauto.com",
+    "34.201.91.31",        # Old IP
+    "75.101.220.10",       # New IP
+    "localhost",
+    "127.0.0.1",
+]
 
 
 # Application definition
