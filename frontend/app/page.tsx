@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { DollarSign, AlertTriangle, CreditCard, CheckCircle, Shield, FileText } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
+
 export default function Home() {
   return (
     <div className="relative overflow-hidden">

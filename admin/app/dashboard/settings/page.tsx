@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastProvider';
 export default function SettingsPage() {
   const { showSuccess, showError, showWarning, showInfo } = useToast();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [adminData, setAdminData] = useState({
     name: '',
     email: '',

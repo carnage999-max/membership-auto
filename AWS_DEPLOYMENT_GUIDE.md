@@ -132,7 +132,7 @@ ls -la
 
 ## **Step 5: Create SSL Certificates**
 
-### Option A: Self-Signed (Testing)
+### Option A: Self-Signed (Quick Start - Use This First)
 ```bash
 sudo mkdir -p /home/ubuntu/membership-auto/ssl
 
@@ -140,22 +140,33 @@ sudo mkdir -p /home/ubuntu/membership-auto/ssl
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /home/ubuntu/membership-auto/ssl/key.pem \
   -out /home/ubuntu/membership-auto/ssl/cert.pem \
-  -subj "/C=US/ST=State/L=City/O=Org/CN=yourdomain.com"
+  -subj "/C=US/ST=Maine/L=Detroit/O=MembershipAuto/CN=membershipauto.com"
 
 sudo chown ubuntu:ubuntu /home/ubuntu/membership-auto/ssl/*
+
+# Verify
+ls -la /home/ubuntu/membership-auto/ssl/
 ```
 
-### Option B: Let's Encrypt (Production)
-```bash
-# Install Certbot
-sudo apt install -y certbot python3-certbot-standalone
+**Why start with self-signed?** Let's Encrypt requires your domain to point to this EC2 instance (DNS configured first). You'll upgrade to Let's Encrypt after Step 11 (Route 53 configuration).
 
-# Get certificate (stop Nginx first if running)
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
+### Option B: Let's Encrypt (After DNS is Configured)
+```bash
+# UPDATE APT FIRST
+sudo apt update
+
+# STOP NGINX (if running)
+docker-compose down
+
+# Install Certbot
+sudo apt install -y certbot
+
+# Get certificate - ONLY after DNS points to this EC2 IP
+sudo certbot certonly --standalone -d membershipauto.com -d www.membershipauto.com
 
 # Copy to project
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem /home/ubuntu/membership-auto/ssl/cert.pem
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem /home/ubuntu/membership-auto/ssl/key.pem
+sudo cp /etc/letsencrypt/live/membershipauto.com/fullchain.pem /home/ubuntu/membership-auto/ssl/cert.pem
+sudo cp /etc/letsencrypt/live/membershipauto.com/privkey.pem /home/ubuntu/membership-auto/ssl/key.pem
 sudo chown ubuntu:ubuntu /home/ubuntu/membership-auto/ssl/*
 ```
 
@@ -226,7 +237,7 @@ nano /home/ubuntu/membership-auto/backend/membership_auto/settings.py
 DEBUG = False
 
 # Add allowed hosts
-ALLOWED_HOSTS = ['yourdomain.com', 'www.yourdomain.com', 'ec2-instance-ip']
+ALLOWED_HOSTS = ['membershipauto.com', 'www.membershipauto.com', '34.201.91.31']
 
 # Update database URL (should be read from .env)
 DATABASES = {
@@ -239,9 +250,9 @@ DATABASES = {
 
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
-    'https://yourdomain.com',
-    'https://admin.yourdomain.com',
-    'https://www.yourdomain.com',
+    'https://membershipauto.com',
+    'https://admin.membershipauto.com',
+    'https://www.membershipauto.com',
 ]
 
 # Static files

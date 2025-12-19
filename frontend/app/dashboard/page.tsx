@@ -1,5 +1,8 @@
 'use client';
 
+// Prevent static generation for this dynamic page
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

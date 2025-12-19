@@ -1,24 +1,13 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import locationService from '@/lib/api/locationService';
 import { Location } from '@/lib/api/appointmentService';
 import { MapPin, Phone, Clock, Navigation, Calendar, ArrowLeft } from 'lucide-react';
-
-// Dynamically import Leaflet map component to avoid SSR issues
-const MapComponent = dynamic(() => import('@/lib/components/LocationMap'), {
-  loading: () => (
-    <div className="w-full h-96 bg-[#0D0D0D] rounded-lg border border-[#2A2A2A] flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-[#CBA86E] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-gray-400">Loading map...</p>
-      </div>
-    </div>
-  ),
-  ssr: false,
-});
+import LocationMap from '@/lib/components/LocationMap';
 
 type LocationWithDistance = Location & { distance?: number };
 
@@ -256,7 +245,7 @@ export default function LocationsPage() {
             <MapPin className="w-5 h-5 text-[#CBA86E]" />
             <h2 className="text-xl font-semibold text-white">Map View</h2>
           </div>
-          <MapComponent 
+          <LocationMap 
             locations={sortedLocations}
             userLocation={userLocation}
           />

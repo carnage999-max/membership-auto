@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { Fuel, Plus, TrendingUp, DollarSign, Gauge, Calendar, Car, Trash2, X } from 'lucide-react';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
