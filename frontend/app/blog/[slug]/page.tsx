@@ -83,7 +83,54 @@ const articles = [
       <p>While having a membership means most repairs won't cost you extra, some issues need immediate attention to prevent dangerous situations or catastrophic damage.</p>
 
       <h2>1. Brake Problems</h2>
-      <p>If you hear squealing, grinding, or feel vibrations when braking, get it checked immediately. Brake failure can lead to serious accidents.</p>
+      <p>If you hear squealing, grinding, or feel vibrations when braking, get it checked immesnap-05ebf17f9a0bc77de
+-
+2025/10/10 14:41 GMT+1
+use1-az4 (us-east-1c)
+In-use
+No alarms
+i-0fef3c405eeb572f3 (storm defender): /dev/sda1 (attached)
+Okay
+Completed
+Not encrypted
+–
+-
+No
+No
+false
+–
+￼
+￼
+vol-020c0bb4661541e99
+gp3
+8 GiB
+3000
+125
+snap-05ebf17f9a0bc77de
+-
+2025/10/09 19:24 GMT+1
+use1-az4 (us-east-1c)
+In-use
+No alarms
+i-0e0f1ddd81f670a3a (Timer_for_Life): /dev/sda1 (attached)
+Okay
+Completed
+Not encrypted
+–
+-
+No
+No
+false
+–
+￼
+￼
+vol-07aefde204a79dd4b
+gp3
+20 GiB
+3000
+125
+snap-01e432caa3e50ae05
+-diately. Brake failure can lead to serious accidents.</p>
       <p><strong>Warning signs:</strong> Squealing noise, soft brake pedal, vibrations, pulling to one side</p>
 
       <h2>2. Engine Overheating</h2>
