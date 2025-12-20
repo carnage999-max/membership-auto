@@ -43,4 +43,4 @@ ENV PORT 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3001', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-CMD ["next", "start", "-p", "3001"]
+CMD ["node_modules/.bin/next", "start", "-p", "3001"]
