@@ -33,6 +33,8 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "membershipauto.com",
     "www.membershipauto.com",
+    "api.membershipauto.com",
+    "admin.membershipauto.com",
     "34.201.91.31",        # Old IP
     "75.101.220.10",       # Old IP
     "13.223.206.213",      # Production t3.small
