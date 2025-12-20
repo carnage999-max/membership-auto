@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Increase Node.js memory for build
+ENV NODE_OPTIONS="--max-old-space-size=512"
+
 # Copy package files
 COPY package*.json ./
 
@@ -12,7 +15,7 @@ RUN npm ci
 # Copy source
 COPY . .
 
-# Build Next.js app
+# Build Next.js app with increased memory
 RUN npm run build
 
 # Production stage
