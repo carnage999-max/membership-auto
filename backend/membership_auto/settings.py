@@ -34,7 +34,8 @@ ALLOWED_HOSTS = [
     "membershipauto.com",
     "www.membershipauto.com",
     "34.201.91.31",        # Old IP
-    "75.101.220.10",       # New IP
+    "75.101.220.10",       # Old IP
+    "13.223.206.213",      # Production t3.small
     "localhost",
     "127.0.0.1",
 ]
