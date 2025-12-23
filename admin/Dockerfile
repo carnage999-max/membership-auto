@@ -15,6 +15,12 @@ RUN npm ci
 # Copy source
 COPY . .
 
+# Accept build arguments for NEXT_PUBLIC variables
+ARG NEXT_PUBLIC_API_BASE_URL
+
+# Set environment variables for build
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-https://api.membershipauto.com}
+
 # Build Next.js app with increased memory
 RUN npm run build
 
