@@ -35,9 +35,9 @@ ALLOWED_HOSTS = [
     "www.membershipauto.com",
     "api.membershipauto.com",
     "admin.membershipauto.com",
-    "34.201.91.31",        # Old IP
-    "75.101.220.10",       # Old IP
-    "13.223.206.213",      # Production t3.small
+    "34.201.91.31",  # Old IP
+    "75.101.220.10",  # Old IP
+    "13.223.206.213",  # Production t3.small
     "localhost",
     "127.0.0.1",
 ]
@@ -207,11 +207,10 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000"
+).split(",")
 
 CORS_ALLOW_CREDENTIALS = True
 
