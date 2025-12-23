@@ -41,6 +41,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://api.membershipauto.com}
+        NEXT_PUBLIC_WS_BASE_URL: ${NEXT_PUBLIC_WS_BASE_URL:-wss://api.membershipauto.com}
     container_name: membership-auto-frontend
     ports:
       - "3001:3001"
@@ -48,8 +51,6 @@ services:
       - .env.production
     environment:
       - PORT=3001
-      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
-      - NEXT_PUBLIC_WS_BASE_URL=${NEXT_PUBLIC_WS_BASE_URL:-ws://localhost:8000}
     restart: always
     networks:
       - membership-auto-network
@@ -59,13 +60,13 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://api.membershipauto.com}
     container_name: membership-auto-admin
     ports:
       - "3000:3000"
     env_file:
       - .env.production
-    environment:
-      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     restart: always
     networks:
       - membership-auto-network
