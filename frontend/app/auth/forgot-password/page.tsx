@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
 
         {/* Card */}
         <div className="bg-[var(--surface)] rounded-lg border border-[var(--border-color)] p-8">
-          {!status === 'success' ? (
+          {status !== 'success' ? (
             <>
               {/* Header */}
               <div className="text-center mb-8">
