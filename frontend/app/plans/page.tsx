@@ -113,7 +113,7 @@ export default function PlansPage() {
       setError('');
 
       // Create payment intent
-      const response = await fetch('/api/payments/create-payment-intent/', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payments/create-payment-intent/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
