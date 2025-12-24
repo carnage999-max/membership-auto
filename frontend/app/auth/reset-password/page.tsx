@@ -202,7 +202,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--background)]"></div>}>
       <ResetPasswordContent />
     </Suspense>
   );
