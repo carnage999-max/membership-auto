@@ -13,13 +13,14 @@ def send_welcome_email(user_email, user_name=None):
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": "Welcome to Membership Auto!",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": "Welcome to Membership Auto!",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -44,26 +45,30 @@ def send_welcome_email(user_email, user_name=None):
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send welcome email to {user_email}: {str(e)}")
         return False
 
 
-def send_membership_confirmation_email(user_email, user_name, plan_name, amount, renewal_date):
+def send_membership_confirmation_email(
+    user_email, user_name, plan_name, amount, renewal_date
+):
     """Send confirmation email after successful membership purchase"""
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": f"Membership Confirmed - {plan_name} Plan",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": f"Membership Confirmed - {plan_name} Plan",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -90,8 +95,9 @@ def send_membership_confirmation_email(user_email, user_name, plan_name, amount,
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send membership confirmation email to {user_email}: {str(e)}")
@@ -103,15 +109,16 @@ def send_password_reset_email(user_email, reset_token, user_name=None):
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     reset_url = f"{settings.FRONTEND_URL}/auth/reset-password?token={reset_token}"
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": "Reset Your Membership Auto Password",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": "Reset Your Membership Auto Password",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -144,8 +151,9 @@ def send_password_reset_email(user_email, reset_token, user_name=None):
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send password reset email to {user_email}: {str(e)}")
@@ -157,13 +165,14 @@ def send_appointment_confirmation_email(user_email, user_name, appointment_detai
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": f"Appointment Confirmed - {appointment_details.get('service_type', 'Service')}",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": f"Appointment Confirmed - {appointment_details.get('service_type', 'Service')}",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -190,11 +199,14 @@ def send_appointment_confirmation_email(user_email, user_name, appointment_detai
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
-        print(f"Failed to send appointment confirmation email to {user_email}: {str(e)}")
+        print(
+            f"Failed to send appointment confirmation email to {user_email}: {str(e)}"
+        )
         return False
 
 
@@ -203,13 +215,14 @@ def send_billing_reminder_email(user_email, user_name, plan_name, renewal_date):
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": f"Membership Renewal Reminder - {plan_name} Plan",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": f"Membership Renewal Reminder - {plan_name} Plan",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -235,8 +248,9 @@ def send_billing_reminder_email(user_email, user_name, plan_name, renewal_date):
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send billing reminder email to {user_email}: {str(e)}")
@@ -248,14 +262,15 @@ def send_contact_form_email(name, email, phone, user_type, message):
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        response = resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": "support@membershipauto.com",
-            "reply_to": email,
-            "subject": f"New Contact Form Submission from {name}",
-            "html": f"""
+        response = resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": "support@membershipauto.com",
+                "reply_to": email,
+                "subject": f"New Contact Form Submission from {name}",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -280,29 +295,34 @@ def send_contact_form_email(name, email, phone, user_type, message):
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send contact form email: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
 
 
-def send_renewal_reminder_email(user_email, user_name, plan_name, renewal_date, days_until_renewal):
+def send_renewal_reminder_email(
+    user_email, user_name, plan_name, renewal_date, days_until_renewal
+):
     """Send renewal reminder email before membership expires"""
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        renewal_date_str = renewal_date.strftime('%B %d, %Y')
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": f"Your {plan_name} Membership Renews in {days_until_renewal} Days",
-            "html": f"""
+        renewal_date_str = renewal_date.strftime("%B %d, %Y")
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": f"Your {plan_name} Membership Renews in {days_until_renewal} Days",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #CBA86E;">
@@ -332,27 +352,31 @@ def send_renewal_reminder_email(user_email, user_name, plan_name, renewal_date, 
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send renewal reminder email: {str(e)}")
         return False
 
 
-def send_renewal_confirmation_email(user_email, user_name, plan_name, charge_amount, next_renewal_date):
+def send_renewal_confirmation_email(
+    user_email, user_name, plan_name, charge_amount, next_renewal_date
+):
     """Send confirmation email after membership is renewed"""
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        next_renewal_str = next_renewal_date.strftime('%B %d, %Y')
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": "Your Membership Auto Renewal Confirmed",
-            "html": f"""
+        next_renewal_str = next_renewal_date.strftime("%B %d, %Y")
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": "Your Membership Auto Renewal Confirmed",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #CBA86E;">
@@ -386,8 +410,9 @@ def send_renewal_confirmation_email(user_email, user_name, plan_name, charge_amo
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send renewal confirmation email: {str(e)}")
@@ -399,13 +424,14 @@ def send_cancellation_confirmation_email(user_email, user_name, plan_name):
     if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
-    
+
     try:
-        resend.emails.send({
-            "from": settings.DEFAULT_FROM_EMAIL,
-            "to": user_email,
-            "subject": "Your Membership Auto Subscription Has Been Cancelled",
-            "html": f"""
+        resend.emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": user_email,
+                "subject": "Your Membership Auto Subscription Has Been Cancelled",
+                "html": f"""
             <html>
                 <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
@@ -437,8 +463,9 @@ def send_cancellation_confirmation_email(user_email, user_name, plan_name):
                     </div>
                 </body>
             </html>
-            """
-        })
+            """,
+            }
+        )
         return True
     except Exception as e:
         print(f"Failed to send cancellation confirmation email: {str(e)}")

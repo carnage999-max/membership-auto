@@ -95,50 +95,63 @@ class Plan(models.Model):
 
 class Membership(models.Model):
     STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('expired', 'Expired'),
-        ('cancelled', 'Cancelled'),
-        ('paused', 'Paused'),
+        ("active", "Active"),
+        ("expired", "Expired"),
+        ("cancelled", "Cancelled"),
+        ("paused", "Paused"),
     ]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
     plan = models.ForeignKey(Plan, on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
     started_at = models.DateTimeField(blank=True, null=True)
     next_billing_at = models.DateTimeField(blank=True, null=True)
     cancelled_at = models.DateTimeField(blank=True, null=True)
-    expiry_reminder_sent = models.BooleanField(default=False)  # Track if 7-day reminder sent
+    expiry_reminder_sent = models.BooleanField(
+        default=False
+    )  # Track if 7-day reminder sent
     last_renewal_at = models.DateTimeField(blank=True, null=True)
-    auto_renew = models.BooleanField(default=True)  # Allow users to disable auto-renewal
-    renewal_failed_count = models.IntegerField(default=0)  # Track failed renewal attempts
+    auto_renew = models.BooleanField(
+        default=True
+    )  # Allow users to disable auto-renewal
+    renewal_failed_count = models.IntegerField(
+        default=0
+    )  # Track failed renewal attempts
 
     class Meta:
         db_table = "memberships"
 
     def __str__(self):
         return f"{self.user.email} - {self.plan.name if self.plan else 'No Plan'}"
-    
+
     @property
     def is_active(self):
         """Check if membership is currently active"""
         from django.utils import timezone
-        return (self.status == 'active' and 
-                (self.next_billing_at is None or self.next_billing_at > timezone.now()))
-    
+
+        return self.status == "active" and (
+            self.next_billing_at is None or self.next_billing_at > timezone.now()
+        )
+
     @property
     def days_until_renewal(self):
         """Calculate days until next billing"""
         from django.utils import timezone
+
         if not self.next_billing_at:
             return None
         delta = self.next_billing_at - timezone.now()
         return max(0, delta.days)
 
+
 class PasswordResetToken(models.Model):
     """Password reset tokens for users"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="password_reset_tokens"
+    )
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()

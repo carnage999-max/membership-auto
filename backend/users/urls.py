@@ -11,7 +11,11 @@ urlpatterns = [
     path("change-password/", views.change_password, name="change_password"),
     path("savings/", views.savings, name="savings"),
     path("cancel-membership/", views.cancel_membership, name="cancel_membership"),
-    path("reactivate-membership/", views.reactivate_membership, name="reactivate_membership"),
+    path(
+        "reactivate-membership/",
+        views.reactivate_membership,
+        name="reactivate_membership",
+    ),
     path("toggle-auto-renew/", views.toggle_auto_renew, name="toggle_auto_renew"),
     path("contact/", send_contact_message, name="contact"),
     path("forgot-password/", forgot_password, name="forgot_password"),
