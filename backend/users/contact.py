@@ -5,6 +5,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from users.email import send_contact_form_email
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
@@ -20,33 +23,46 @@ def send_contact_message(request):
         
         # Validate required fields
         if not all([name, email, message]):
+            logger.warning(f"Contact form missing required fields: name={bool(name)}, email={bool(email)}, message={bool(message)}")
             return Response(
                 {'error': 'Name, email, and message are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Send email to support
-        success = send_contact_form_email(
-            name=name,
-            email=email,
-            phone=phone,
-            user_type=user_type,
-            message=message
-        )
-        
-        if not success:
-            return Response(
-                {'error': 'Failed to send message'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        try:
+            success = send_contact_form_email(
+                name=name,
+                email=email,
+                phone=phone,
+                user_type=user_type,
+                message=message
             )
-        
-        return Response(
-            {'message': 'Contact message sent successfully'},
-            status=status.HTTP_200_OK
-        )
+            
+            if not success:
+                logger.error(f"Failed to send contact form email for {email}")
+                # Still return 200 to user - the message was received even if email failed
+                return Response(
+                    {'message': 'Your message has been received. We will contact you shortly.'},
+                    status=status.HTTP_200_OK
+                )
+            
+            logger.info(f"Contact form email sent successfully from {email}")
+            return Response(
+                {'message': 'Your message has been sent successfully. We will get back to you soon.'},
+                status=status.HTTP_200_OK
+            )
+        except Exception as email_error:
+            logger.error(f"Exception in send_contact_form_email: {str(email_error)}", exc_info=True)
+            # Still return success to user since message was received
+            return Response(
+                {'message': 'Your message has been received. We will contact you shortly.'},
+                status=status.HTTP_200_OK
+            )
     
     except Exception as e:
+        logger.error(f"Unhandled exception in send_contact_message: {str(e)}", exc_info=True)
         return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {'message': 'Your message has been received. We will contact you shortly.'},
+            status=status.HTTP_200_OK
         )

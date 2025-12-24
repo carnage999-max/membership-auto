@@ -250,9 +250,10 @@ def send_contact_form_email(name, email, phone, user_type, message):
         return False
     
     try:
-        resend.emails.send({
+        response = resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
-            "to": "nathan@membershipauto.com",
+            "to": "support@membershipauto.com",
+            "reply_to": email,
             "subject": f"New Contact Form Submission from {name}",
             "html": f"""
             <html>
@@ -284,4 +285,6 @@ def send_contact_form_email(name, email, phone, user_type, message):
         return True
     except Exception as e:
         print(f"Failed to send contact form email: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False

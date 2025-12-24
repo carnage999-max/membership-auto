@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ConfirmDialog from '@/app/components/ConfirmDialog';
+import PremiumPlanBanner from '@/app/components/PremiumPlanBanner';
 import { LogOut, User, Menu, X } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -248,6 +249,9 @@ export default function DashboardLayout({
           )}
         </div>
       </header>
+
+      {/* Premium Plan Banner */}
+      <PremiumPlanBanner />
 
       {/* Main Content */}
       <main>{children}</main>
