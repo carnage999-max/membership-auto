@@ -1,6 +1,7 @@
 import os
 import json
 import stripe
+import logging
 from decimal import Decimal
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -15,6 +16,8 @@ from datetime import timedelta
 from .models import Payment
 from .serializers import PlanSerializer, PaymentSerializer
 from users.models import Plan, Membership
+
+logger = logging.getLogger(__name__)
 
 # Configure Stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
@@ -38,6 +41,7 @@ def create_payment_intent(request):
         plan_id = request.data.get('plan_id')
         
         if not plan_id:
+            logger.warning(f"Payment intent request missing plan_id from user {request.user.id}")
             return Response(
                 {'error': 'plan_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -46,58 +50,85 @@ def create_payment_intent(request):
         try:
             plan = Plan.objects.get(id=plan_id)
         except Plan.DoesNotExist:
+            logger.warning(f"Plan not found: {plan_id}")
             return Response(
                 {'error': 'Plan not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
         
         user = request.user
+        logger.info(f"Creating payment intent for user {user.id}, plan {plan.id}")
         
         # Create or get Stripe customer
         stripe_customer = None
         if user.stripe_customer_id:
             try:
                 stripe_customer = stripe.Customer.retrieve(user.stripe_customer_id)
-            except stripe.error.InvalidRequestError:
+            except stripe.error.InvalidRequestError as e:
+                logger.warning(f"Invalid Stripe customer ID {user.stripe_customer_id}: {str(e)}")
                 # Customer ID is invalid, create new one
                 pass
         
         if not stripe_customer:
-            stripe_customer = stripe.Customer.create(
-                email=user.email,
-                name=f"{user.name}".strip() or user.email,
-                metadata={
-                    'user_id': str(user.id),
-                    'user_email': user.email,
-                }
-            )
-            user.stripe_customer_id = stripe_customer.id
-            user.save()
+            try:
+                stripe_customer = stripe.Customer.create(
+                    email=user.email,
+                    name=(user.name or user.email).strip(),
+                    metadata={
+                        'user_id': str(user.id),
+                        'user_email': user.email,
+                    }
+                )
+                user.stripe_customer_id = stripe_customer.id
+                user.save()
+                logger.info(f"Created new Stripe customer {stripe_customer.id} for user {user.id}")
+            except stripe.error.StripeError as e:
+                logger.error(f"Failed to create Stripe customer: {str(e)}")
+                return Response(
+                    {'error': f'Failed to create payment customer: {str(e)}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         
         # Create payment intent
         amount_cents = int(plan.price_monthly * 100)  # Stripe uses cents
         
-        payment_intent = stripe.PaymentIntent.create(
-            amount=amount_cents,
-            currency='usd',
-            customer=stripe_customer.id,
-            metadata={
-                'user_id': str(user.id),
-                'user_email': user.email,
-                'plan_id': str(plan.id),
-                'plan_name': plan.name,
-            }
-        )
+        try:
+            payment_intent = stripe.PaymentIntent.create(
+                amount=amount_cents,
+                currency='usd',
+                customer=stripe_customer.id,
+                metadata={
+                    'user_id': str(user.id),
+                    'user_email': user.email,
+                    'plan_id': str(plan.id),
+                    'plan_name': plan.name,
+                }
+            )
+            logger.info(f"Created payment intent {payment_intent.id} for user {user.id}, amount {amount_cents} cents")
+        except stripe.error.StripeError as e:
+            logger.error(f"Failed to create payment intent: {str(e)}")
+            return Response(
+                {'error': f'Failed to create payment intent: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         # Create Payment record
-        payment = Payment.objects.create(
-            user=user,
-            plan=plan,
-            stripe_payment_intent_id=payment_intent.id,
-            stripe_customer_id=stripe_customer.id,
-            amount=plan.price_monthly,
-            status='pending'
-        )
+        try:
+            payment = Payment.objects.create(
+                user=user,
+                plan=plan,
+                stripe_payment_intent_id=payment_intent.id,
+                stripe_customer_id=stripe_customer.id,
+                amount=plan.price_monthly,
+                status='pending'
+            )
+            logger.info(f"Created payment record {payment.id}")
+        except Exception as e:
+            logger.error(f"Failed to create payment record: {str(e)}")
+            return Response(
+                {'error': f'Failed to save payment: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         return Response({
             'client_secret': payment_intent.client_secret,
@@ -108,7 +139,7 @@ def create_payment_intent(request):
         })
     
     except Exception as e:
-        print(f"Error creating payment intent: {str(e)}")
+        logger.error(f"Unhandled error creating payment intent: {str(e)}", exc_info=True)
         return Response(
             {'error': 'Failed to create payment intent'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
