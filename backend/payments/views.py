@@ -4,7 +4,7 @@ import stripe
 from decimal import Decimal
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.http import HttpResponse
 from django.utils import timezone
@@ -22,6 +22,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def list_plans(request):
     """Get all active membership plans"""
     plans = Plan.objects.all()
