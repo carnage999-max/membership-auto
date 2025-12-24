@@ -711,8 +711,7 @@ export default function ProfilePage() {
           onConfirm={handleCancelMembership}
           title="Cancel Membership?"
           message="Are you sure you want to cancel your membership? You will lose access to all benefits immediately."
-          isLoading={cancelStatus === 'cancelling'}
-          isDangerous={true}
+          loading={cancelStatus === 'cancelling'}
         />
       </div>
     </div>
