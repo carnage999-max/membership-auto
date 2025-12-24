@@ -19,6 +19,7 @@ interface PaymentInfo {
   amount: number;
   plan_name: string;
   publishable_key: string;
+  email?: string;
 }
 
 function CheckoutForm() {
