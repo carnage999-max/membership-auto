@@ -155,6 +155,84 @@ def payment_history(request):
     return Response(serializer.data)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_payment(request):
+    """Confirm payment and create/update membership after successful payment"""
+    try:
+        payment_id = request.data.get('payment_id')
+        
+        if not payment_id:
+            logger.warning(f"Confirm payment request missing payment_id from user {request.user.id}")
+            return Response(
+                {'error': 'payment_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the payment
+        try:
+            payment = Payment.objects.get(id=payment_id, user=request.user)
+        except Payment.DoesNotExist:
+            logger.warning(f"Payment {payment_id} not found for user {request.user.id}")
+            return Response(
+                {'error': 'Payment not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if already processed
+        if payment.status == 'completed':
+            logger.info(f"Payment {payment_id} already completed")
+            return Response(
+                {'message': 'Payment already completed', 'membership_created': False},
+                status=status.HTTP_200_OK
+            )
+        
+        # Mark payment as completed
+        payment.status = 'completed'
+        payment.completed_at = timezone.now()
+        payment.save()
+        logger.info(f"Updated payment {payment_id} status to completed")
+        
+        # Create or update membership
+        plan = payment.plan
+        if not plan:
+            logger.error(f"No plan associated with payment {payment_id}")
+            return Response(
+                {'error': 'No plan associated with payment'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Create or update membership with 30-day billing cycle
+        membership, created = Membership.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'plan': plan,
+                'status': 'active',
+                'started_at': timezone.now(),
+                'next_billing_at': timezone.now() + timedelta(days=30),
+            }
+        )
+        
+        action = "created" if created else "updated"
+        logger.info(f"Membership {action} for user {request.user.email}: {plan.name}")
+        
+        return Response(
+            {
+                'message': 'Payment confirmed and membership activated',
+                'membership_created': created,
+                'plan_name': plan.name,
+            },
+            status=status.HTTP_200_OK
+        )
+        
+    except Exception as e:
+        logger.error(f"Error confirming payment: {str(e)}", exc_info=True)
+        return Response(
+            {'error': 'Failed to confirm payment'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @csrf_exempt
 @require_http_methods(['POST'])
 def stripe_webhook(request):
@@ -167,53 +245,64 @@ def stripe_webhook(request):
             payload, sig_header, STRIPE_WEBHOOK_SECRET
         )
     except ValueError:
+        logger.warning("Webhook payload could not be decoded")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError:
+        logger.warning("Webhook signature verification failed")
         return HttpResponse(status=400)
     
-    # Handle checkout.session.completed event
-    if event['type'] == 'charge.succeeded':
+    # Handle payment success events
+    if event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']
+        logger.info(f"Handling payment_intent.succeeded event for {payment_intent.get('id')}")
+        handle_payment_success(payment_intent)
+    elif event['type'] == 'charge.succeeded':
+        # Also handle charge.succeeded as fallback
         charge = event['data']['object']
+        logger.info(f"Handling charge.succeeded event for {charge.get('id')}")
         handle_payment_success(charge)
     
     return HttpResponse(status=200)
 
 
-def handle_payment_success(charge):
-    """Handle successful payment and create membership"""
+def handle_payment_success(event_data):
+    """Handle successful payment and create membership from webhook"""
     try:
-        # Find payment by Stripe charge ID
-        payment_intent_id = charge.get('payment_intent')
+        # Get payment intent ID from event data
+        # For payment_intent.succeeded events, id is the payment_intent_id
+        # For charge.succeeded events, payment_intent is the ID we need
+        payment_intent_id = event_data.get('id') or event_data.get('payment_intent')
         
         if not payment_intent_id:
-            print(f"No payment intent found in charge: {charge.get('id')}")
+            logger.warning(f"No payment intent found in event: {event_data.get('id')}")
             return
         
         try:
             payment = Payment.objects.get(stripe_payment_intent_id=payment_intent_id)
         except Payment.DoesNotExist:
-            print(f"Payment not found for intent: {payment_intent_id}")
+            logger.warning(f"Payment not found for intent: {payment_intent_id}")
             return
         
         # Check if already processed
         if payment.status == 'completed':
-            print(f"Payment {payment.id} already processed")
+            logger.info(f"Payment {payment.id} already processed, skipping")
             return
         
         # Update payment status
         payment.status = 'completed'
         payment.completed_at = timezone.now()
         payment.save()
+        logger.info(f"Payment {payment.id} marked as completed")
         
         # Create or update membership
         user = payment.user
         plan = payment.plan
         
         if not plan:
-            print(f"No plan associated with payment {payment.id}")
+            logger.error(f"No plan associated with payment {payment.id}")
             return
         
-        # Create or update membership
+        # Create or update membership with 30-day billing cycle
         membership, created = Membership.objects.update_or_create(
             user=user,
             defaults={
@@ -225,7 +314,7 @@ def handle_payment_success(charge):
         )
         
         action = "created" if created else "updated"
-        print(f"Membership {action} for user {user.email}: {plan.name}")
+        logger.info(f"Membership {action} for user {user.email}: {plan.name}")
         
     except Exception as e:
-        print(f"Error handling payment success: {str(e)}")
+        logger.error(f"Error handling payment success: {str(e)}", exc_info=True)

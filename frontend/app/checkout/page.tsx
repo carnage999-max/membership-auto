@@ -64,6 +64,33 @@ function CheckoutForm() {
         setError(paymentError.message || 'Payment failed');
       } else if (paymentIntent?.status === 'succeeded') {
         setSuccess(true);
+        
+        // Confirm payment with backend to create membership
+        try {
+          const confirmResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payments/confirm-payment/`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionStorage.getItem('access_token') || localStorage.getItem('accessToken')}`,
+              },
+              body: JSON.stringify({
+                payment_id: paymentInfo.payment_id,
+              }),
+            }
+          );
+          
+          if (confirmResponse.ok) {
+            const confirmData = await confirmResponse.json();
+            console.log('Payment confirmed:', confirmData);
+          } else {
+            console.error('Failed to confirm payment with backend');
+          }
+        } catch (err) {
+          console.error('Error confirming payment:', err);
+        }
+        
         sessionStorage.removeItem('paymentIntent');
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {

@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { X, Zap } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
+import { tokenStorage } from '@/lib/auth/tokenStorage';
 
 export default function PremiumPlanBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [hasActiveMembership, setHasActiveMembership] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     setIsClient(true);
@@ -15,7 +19,40 @@ export default function PremiumPlanBanner() {
     if (dismissed) {
       setIsDismissed(true);
     }
-  }, []);
+    
+    // Check if user has active membership
+    checkMembershipStatus();
+  }, [user]);
+  
+  const checkMembershipStatus = async () => {
+    try {
+      const token = tokenStorage.getAccessToken();
+      if (!token) {
+        setHasActiveMembership(false);
+        return;
+      }
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/profile/`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Check if user has an active membership (not 'No Active Membership')
+        const hasActive = data.membership_status && 
+                         data.membership_status !== 'No Active Membership';
+        setHasActiveMembership(hasActive);
+      }
+    } catch (error) {
+      console.error('Error checking membership status:', error);
+      setHasActiveMembership(false);
+    }
+  };
 
   const handleDismiss = () => {
     setIsDismissed(true);
@@ -27,7 +64,8 @@ export default function PremiumPlanBanner() {
     return null;
   }
 
-  if (isDismissed) {
+  // Don't show banner if user has active membership or if dismissed
+  if (isDismissed || hasActiveMembership) {
     return null;
   }
 
