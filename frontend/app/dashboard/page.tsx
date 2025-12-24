@@ -41,6 +41,24 @@ export default function DashboardPage() {
     thisMonth: number;
     servicesUsed: number;
   } | null>(null);
+  const [membershipData, setMembershipData] = useState<{
+    status: string | null;
+    planName: string | null;
+  }>({
+    status: null,
+    planName: null,
+  });
+  const [vehicleHealth, setVehicleHealth] = useState<{
+    overallStatus: string;
+    engine: string;
+    brakes: string;
+    tires: string;
+  }>({
+    overallStatus: 'Unknown',
+    engine: 'Unknown',
+    brakes: 'Unknown',
+    tires: 'Unknown',
+  });
 
   useEffect(() => {
     loadData();
@@ -58,8 +76,10 @@ export default function DashboardPage() {
       setAppointments(appointmentsData);
       setOffers(offersData.slice(0, 3)); // Show first 3 offers
       
-      // Fetch savings data
+      // Fetch savings and membership data
       await loadSavingsData();
+      await loadMembershipData();
+      await loadVehicleHealthData();
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -70,11 +90,19 @@ export default function DashboardPage() {
   const loadSavingsData = async () => {
     try {
       const token = tokenStorage.getAccessToken();
+      
+      if (!token) {
+        console.warn('No auth token available for savings endpoint');
+        setSavingsData({ totalSaved: 0, thisMonth: 0, servicesUsed: 0 });
+        return;
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/savings/`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         }
       );
@@ -89,10 +117,83 @@ export default function DashboardPage() {
           thisMonth: thisMonthData?.amount || 0,
           servicesUsed: data.services_used || 0,
         });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`Failed to load savings data: ${response.status}`, errorData);
+        setSavingsData({ totalSaved: 0, thisMonth: 0, servicesUsed: 0 });
       }
     } catch (error) {
       console.error('Failed to load savings data:', error);
       setSavingsData({ totalSaved: 0, thisMonth: 0, servicesUsed: 0 });
+    }
+  };
+
+  const loadMembershipData = async () => {
+    try {
+      const token = tokenStorage.getAccessToken();
+      
+      if (!token) {
+        setMembershipData({ status: null, planName: null });
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/profile/`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setMembershipData({
+          status: data.membership_status || 'No Active Membership',
+          planName: data.membership_plan || 'No Plan',
+        });
+      } else {
+        setMembershipData({ status: 'No Active Membership', planName: 'No Plan' });
+      }
+    } catch (error) {
+      console.error('Failed to load membership data:', error);
+      setMembershipData({ status: null, planName: null });
+    }
+  };
+
+  const loadVehicleHealthData = async () => {
+    try {
+      const token = tokenStorage.getAccessToken();
+      
+      if (!token || vehicles.length === 0) {
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/vehicle-health/`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const healthData = await response.json();
+        if (healthData.length > 0) {
+          const firstVehicleHealth = healthData[0];
+          setVehicleHealth({
+            overallStatus: firstVehicleHealth.overall_status || 'Unknown',
+            engine: firstVehicleHealth.engine_status || 'Unknown',
+            brakes: firstVehicleHealth.brake_status || 'Unknown',
+            tires: firstVehicleHealth.tire_status || 'Unknown',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load vehicle health data:', error);
     }
   };
 
@@ -346,22 +447,58 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[#B3B3B3] text-sm">Overall Status</span>
-                  <span className="px-3 py-1 bg-green-900/30 text-green-400 rounded-full text-xs font-semibold">
-                    Healthy
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    vehicleHealth.overallStatus === 'good' || vehicleHealth.overallStatus === 'healthy'
+                      ? 'bg-green-900/30 text-green-400'
+                      : vehicleHealth.overallStatus === 'warning' || vehicleHealth.overallStatus === 'caution'
+                      ? 'bg-yellow-900/30 text-yellow-400'
+                      : 'bg-gray-900/30 text-gray-400'
+                  }`}>
+                    {vehicleHealth.overallStatus.charAt(0).toUpperCase() + vehicleHealth.overallStatus.slice(1)}
                   </span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-[#B3B3B3]">Engine</span>
-                    <span className="text-green-400">✓ Good</span>
+                    <span className={`${
+                      vehicleHealth.engine === 'good' || vehicleHealth.engine === 'healthy' ? 'text-green-400' :
+                      vehicleHealth.engine === 'warning' ? 'text-yellow-400' :
+                      vehicleHealth.engine === 'critical' ? 'text-red-400' :
+                      'text-gray-400'
+                    }`}>
+                      {vehicleHealth.engine === 'good' || vehicleHealth.engine === 'healthy' ? '✓' :
+                       vehicleHealth.engine === 'warning' ? '⚠' :
+                       vehicleHealth.engine === 'critical' ? '✕' :
+                       '–'} {vehicleHealth.engine.charAt(0).toUpperCase() + vehicleHealth.engine.slice(1)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#B3B3B3]">Brakes</span>
-                    <span className="text-green-400">✓ Good</span>
+                    <span className={`${
+                      vehicleHealth.brakes === 'good' || vehicleHealth.brakes === 'healthy' ? 'text-green-400' :
+                      vehicleHealth.brakes === 'warning' ? 'text-yellow-400' :
+                      vehicleHealth.brakes === 'critical' ? 'text-red-400' :
+                      'text-gray-400'
+                    }`}>
+                      {vehicleHealth.brakes === 'good' || vehicleHealth.brakes === 'healthy' ? '✓' :
+                       vehicleHealth.brakes === 'warning' ? '⚠' :
+                       vehicleHealth.brakes === 'critical' ? '✕' :
+                       '–'} {vehicleHealth.brakes.charAt(0).toUpperCase() + vehicleHealth.brakes.slice(1)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#B3B3B3]">Tires</span>
-                    <span className="text-yellow-400">⚠ Check Soon</span>
+                    <span className={`${
+                      vehicleHealth.tires === 'good' || vehicleHealth.tires === 'healthy' ? 'text-green-400' :
+                      vehicleHealth.tires === 'warning' ? 'text-yellow-400' :
+                      vehicleHealth.tires === 'critical' ? 'text-red-400' :
+                      'text-gray-400'
+                    }`}>
+                      {vehicleHealth.tires === 'good' || vehicleHealth.tires === 'healthy' ? '✓' :
+                       vehicleHealth.tires === 'warning' ? '⚠' :
+                       vehicleHealth.tires === 'critical' ? '✕' :
+                       '–'} {vehicleHealth.tires.charAt(0).toUpperCase() + vehicleHealth.tires.slice(1)}
+                    </span>
                   </div>
                 </div>
                 <Link
@@ -431,7 +568,16 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-[#707070] text-sm mb-1">Status</p>
-                  <p className="text-white font-semibold">Active</p>
+                  <p className="text-white font-semibold">
+                    <span className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${membershipData.status === 'No Active Membership' ? 'bg-gray-500' : 'bg-green-500'}`}></span>
+                      {membershipData.status}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#707070] text-sm mb-1">Plan</p>
+                  <p className="text-white font-semibold text-sm">{membershipData.planName}</p>
                 </div>
                 <div>
                   <p className="text-[#707070] text-sm mb-1">Email</p>

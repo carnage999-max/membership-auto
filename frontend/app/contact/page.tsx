@@ -23,17 +23,17 @@ export default function ContactPage() {
     setErrorMessage('');
 
     try {
-      // TODO: Replace with actual API call to backend
-      // const response = await fetch('/api/contact', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/contact/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
       
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send message');
+      }
       
-      console.log("Form submitted:", formData);
       setSubmitStatus('success');
       
       // Reset form
@@ -51,7 +51,7 @@ export default function ContactPage() {
       }, 5000);
     } catch (error) {
       setSubmitStatus('error');
-      setErrorMessage('Failed to send message. Please try again or contact us directly.');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to send message. Please try again or contact us directly.');
     }
   };
 

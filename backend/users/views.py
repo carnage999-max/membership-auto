@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from .models import User, Membership
 from .serializers import UserSerializer
 from referrals.models import Referral
+from .email import send_welcome_email
 
 
 @api_view(["POST"])
@@ -38,6 +39,9 @@ def register(request):
         name=name,
         phone=phone,
     )
+
+    # Send welcome email
+    send_welcome_email(user.email, user.name)
 
     # Handle referral if code provided
     if referral_code:
@@ -249,8 +253,19 @@ def savings(request):
     try:
         membership = Membership.objects.get(user=user)
     except Membership.DoesNotExist:
+        # Return empty savings data for users without a membership yet
         return Response(
-            {"error": "No active membership found"}, status=status.HTTP_404_NOT_FOUND
+            {
+                "total_saved": 0.0,
+                "services_used": 0,
+                "total_paid": 0.0,
+                "net_savings": 0.0,
+                "monthly_breakdown": [],
+                "average_per_service": 0.0,
+                "membership_plan": None,
+                "monthly_fee": 0.0,
+            },
+            status=status.HTTP_200_OK
         )
 
     # Calculate savings from appointments

@@ -106,3 +106,26 @@ class Membership(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.plan.name if self.plan else 'No Plan'}"
+
+class PasswordResetToken(models.Model):
+    """Password reset tokens for users"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    token = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "password_reset_tokens"
+        indexes = [
+            models.Index(fields=["token"]),
+            models.Index(fields=["user"]),
+        ]
+
+    def __str__(self):
+        return f"Reset token for {self.user.email}"
+
+    @property
+    def is_expired(self):
+        """Check if token has expired"""
+        return timezone.now() > self.expires_at

@@ -586,17 +586,20 @@ export default function ProfilePage() {
                 Billing Information
               </h3>
               <div className="space-y-3">
-                <div className="p-4 bg-[var(--background)] rounded-lg border border-[var(--border-color)]">
-                  <p className="text-xs text-[var(--text-muted)] mb-1">Payment Method</p>
-                  <p className="text-[var(--foreground)] font-medium">•••• •••• •••• 4242</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">Expires 12/2026</p>
+                <div className="p-4 bg-[var(--background)] rounded-lg border border-[var(--border-color)] text-center">
+                  <p className="text-[var(--text-muted)] text-sm mb-3">
+                    Billing management is coming soon!
+                  </p>
+                  <p className="text-[var(--text-secondary)] text-xs mb-4">
+                    For now, manage your billing through your membership dashboard.
+                  </p>
+                  <button className="w-full px-4 py-2 border border-[var(--gold)] text-[var(--gold)] rounded-lg hover:bg-[var(--gold)] hover:text-[#0d0d0d] transition-colors">
+                    View Billing History
+                  </button>
                 </div>
-                <button className="w-full px-4 py-2 border border-[var(--gold)] text-[var(--gold)] rounded-lg hover:bg-[var(--gold)] hover:text-[#0d0d0d] transition-colors">
-                  Update Payment Method
-                </button>
-                <button className="w-full px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--gold)] transition-colors text-sm">
-                  View Billing History
-                </button>
+                <p className="text-xs text-[var(--text-muted)] text-center">
+                  Full billing management features coming in the next update
+                </p>
               </div>
             </div>
 
