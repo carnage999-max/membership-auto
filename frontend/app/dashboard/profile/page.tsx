@@ -561,9 +561,9 @@ export default function ProfilePage() {
                   <p className="text-xs opacity-70 mb-4">
                     Upgrade to a membership plan to unlock exclusive benefits and services.
                   </p>
-                  <button className="w-full px-4 py-2 bg-[#0d0d0d] text-[var(--gold)] font-semibold rounded-lg hover:bg-opacity-90 transition-colors">
+                  <a href="/plans" className="block w-full px-4 py-2 bg-[#0d0d0d] text-[var(--gold)] font-semibold rounded-lg hover:bg-opacity-90 transition-colors text-center">
                     View Membership Plans
-                  </button>
+                  </a>
                 </div>
               </div>
             ) : (

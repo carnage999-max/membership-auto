@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/services/", include("services.urls")),
     path("api/parking/", include("parking.urls")),
     path("api/vehicle-health/", include("vehicle_health.urls")),
+    path("api/payments/", include("payments.urls")),
     # Admin API endpoints
     path("api/admin/", include("users.admin_urls")),
     path("api/admin/", include("settings.urls")),
