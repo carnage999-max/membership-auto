@@ -288,3 +288,158 @@ def send_contact_form_email(name, email, phone, user_type, message):
         import traceback
         traceback.print_exc()
         return False
+
+
+def send_renewal_reminder_email(user_email, user_name, plan_name, renewal_date, days_until_renewal):
+    """Send renewal reminder email before membership expires"""
+    if not resend.api_key:
+        print("RESEND_API_KEY not configured. Skipping email send.")
+        return False
+    
+    try:
+        renewal_date_str = renewal_date.strftime('%B %d, %Y')
+        resend.emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": user_email,
+            "subject": f"Your {plan_name} Membership Renews in {days_until_renewal} Days",
+            "html": f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #CBA86E;">
+                        <h1 style="color: #CBA86E; margin-bottom: 10px;">Membership Renewal Reminder</h1>
+                        <p>Hi {user_name},</p>
+                        
+                        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <p style="margin: 0 0 10px 0;"><strong>Your {plan_name} plan renews in {days_until_renewal} days</strong></p>
+                            <p style="margin: 0; color: #666; font-size: 14px;">Renewal Date: <strong>{renewal_date_str}</strong></p>
+                        </div>
+                        
+                        <p>Make sure your payment method is up to date to avoid any service interruptions.</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://membershipauto.com/dashboard/profile" style="background-color: #CBA86E; color: #0d0d0d; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Update Payment Method
+                            </a>
+                        </div>
+                        
+                        <p style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px;">
+                            <strong>Questions?</strong> Contact our support team at support@membershipauto.com
+                        </p>
+                        
+                        <p style="color: #777; font-size: 12px; margin-top: 20px;">
+                            This is an automated message from Membership Auto. Please do not reply to this email.
+                        </p>
+                    </div>
+                </body>
+            </html>
+            """
+        })
+        return True
+    except Exception as e:
+        print(f"Failed to send renewal reminder email: {str(e)}")
+        return False
+
+
+def send_renewal_confirmation_email(user_email, user_name, plan_name, charge_amount, next_renewal_date):
+    """Send confirmation email after membership is renewed"""
+    if not resend.api_key:
+        print("RESEND_API_KEY not configured. Skipping email send.")
+        return False
+    
+    try:
+        next_renewal_str = next_renewal_date.strftime('%B %d, %Y')
+        resend.emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": user_email,
+            "subject": "Your Membership Auto Renewal Confirmed",
+            "html": f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; border-left: 4px solid #CBA86E;">
+                        <h1 style="color: #CBA86E; margin-bottom: 10px;">Membership Renewed! ✓</h1>
+                        <p>Hi {user_name},</p>
+                        
+                        <p>Great news! Your {plan_name} membership has been successfully renewed.</p>
+                        
+                        <div style="background-color: #f0f8f0; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+                            <p style="margin: 0 0 10px 0;"><strong style="color: #4CAF50;">Renewal Confirmed</strong></p>
+                            <p style="margin: 0; color: #666;">Plan: {plan_name}</p>
+                            <p style="margin: 0; color: #666;">Amount Charged: ${charge_amount}</p>
+                            <p style="margin: 0; color: #666;">Next Renewal: {next_renewal_str}</p>
+                        </div>
+                        
+                        <p>Your membership is now active and ready to use. Continue enjoying unlimited access to vehicle repairs and maintenance!</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://membershipauto.com/dashboard" style="background-color: #CBA86E; color: #0d0d0d; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Go to Dashboard
+                            </a>
+                        </div>
+                        
+                        <p style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px;">
+                            <strong>Questions?</strong> Contact our support team at support@membershipauto.com
+                        </p>
+                        
+                        <p style="color: #777; font-size: 12px; margin-top: 20px;">
+                            This is an automated message from Membership Auto. Please do not reply to this email.
+                        </p>
+                    </div>
+                </body>
+            </html>
+            """
+        })
+        return True
+    except Exception as e:
+        print(f"Failed to send renewal confirmation email: {str(e)}")
+        return False
+
+
+def send_cancellation_confirmation_email(user_email, user_name, plan_name):
+    """Send confirmation email when membership is cancelled"""
+    if not resend.api_key:
+        print("RESEND_API_KEY not configured. Skipping email send.")
+        return False
+    
+    try:
+        resend.emails.send({
+            "from": settings.DEFAULT_FROM_EMAIL,
+            "to": user_email,
+            "subject": "Your Membership Auto Subscription Has Been Cancelled",
+            "html": f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; color: #333;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px;">
+                        <h1 style="color: #333; margin-bottom: 10px;">Subscription Cancelled</h1>
+                        <p>Hi {user_name},</p>
+                        
+                        <p>Your {plan_name} membership has been cancelled as requested.</p>
+                        
+                        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <p style="margin: 0; color: #856404;"><strong>Note:</strong> You will no longer have access to membership benefits after today.</p>
+                        </div>
+                        
+                        <h3 style="color: #333; margin-top: 30px;">We'd love to hear from you!</h3>
+                        <p>If you have any feedback about your experience or would like to reactivate your membership in the future, please let us know.</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="https://membershipauto.com/contact" style="background-color: #CBA86E; color: #0d0d0d; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Contact Support
+                            </a>
+                        </div>
+                        
+                        <p style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 20px;">
+                            Have questions? Contact us at support@membershipauto.com
+                        </p>
+                        
+                        <p style="color: #777; font-size: 12px; margin-top: 20px;">
+                            This is an automated message from Membership Auto. Please do not reply to this email.
+                        </p>
+                    </div>
+                </body>
+            </html>
+            """
+        })
+        return True
+    except Exception as e:
+        print(f"Failed to send cancellation confirmation email: {str(e)}")
+        return False

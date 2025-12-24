@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { User, Mail, Phone, CreditCard, Bell, Lock, Save, Edit2, X } from 'lucide-react';
 import { tokenStorage } from '@/lib/auth/tokenStorage';
+import ConfirmDialog from '@/app/components/ConfirmDialog';
 
 interface UserProfile {
   name: string;
@@ -15,6 +16,9 @@ interface UserProfile {
   membershipStatus: string;
   renewalDate: string;
   monthlyFee: number;
+  canCancel?: boolean;
+  canReactivate?: boolean;
+  autoRenew?: boolean;
 }
 
 export default function ProfilePage() {
@@ -49,6 +53,11 @@ export default function ProfilePage() {
     offerNotifications: true,
     referralUpdates: true,
   });
+
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelStatus, setCancelStatus] = useState<'idle' | 'cancelling' | 'success' | 'error'>('idle');
+  const [cancelError, setCancelError] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -170,6 +179,46 @@ export default function ProfilePage() {
       console.error('Error changing password:', error);
       setPasswordError('An error occurred. Please try again.');
       setPasswordStatus('error');
+    }
+  };
+
+  const handleCancelMembership = async () => {
+    setCancelStatus('cancelling');
+    setCancelError('');
+    
+    try {
+      const token = tokenStorage.getAccessToken();
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/users/cancel-membership/`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reason: cancelReason,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        setCancelStatus('success');
+        setShowCancelDialog(false);
+        // Refresh profile to show updated status
+        setTimeout(() => {
+          fetchProfile();
+          setCancelStatus('idle');
+        }, 2000);
+      } else {
+        const data = await response.json();
+        setCancelError(data.error || 'Failed to cancel membership');
+        setCancelStatus('error');
+      }
+    } catch (error) {
+      console.error('Error cancelling membership:', error);
+      setCancelError('An error occurred. Please try again.');
+      setCancelStatus('error');
     }
   };
 
@@ -633,15 +682,38 @@ export default function ProfilePage() {
                 <button className="w-full px-4 py-2 text-left text-[var(--text-secondary)] hover:text-[var(--gold)] hover:bg-[var(--background)] rounded transition-colors">
                   Contact Support
                 </button>
-                {profile.membershipStatus !== 'No Active Membership' && (
-                  <button className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-900/20 rounded transition-colors">
+                {profile.canCancel && (
+                  <button 
+                    onClick={() => setShowCancelDialog(true)}
+                    className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                  >
                     Cancel Membership
+                  </button>
+                )}
+                {profile.canReactivate && (
+                  <button className="w-full px-4 py-2 text-left text-[var(--gold)] hover:bg-[var(--gold)]/10 rounded transition-colors">
+                    Reactivate Membership
                   </button>
                 )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Cancel Membership Dialog */}
+        <ConfirmDialog
+          isOpen={showCancelDialog}
+          onClose={() => {
+            setShowCancelDialog(false);
+            setCancelError('');
+            setCancelReason('');
+          }}
+          onConfirm={handleCancelMembership}
+          title="Cancel Membership?"
+          message="Are you sure you want to cancel your membership? You will lose access to all benefits immediately."
+          isLoading={cancelStatus === 'cancelling'}
+          isDangerous={true}
+        />
       </div>
     </div>
   );
