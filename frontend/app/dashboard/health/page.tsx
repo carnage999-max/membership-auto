@@ -1,11 +1,6 @@
-export const dynamic = 'force-dynamic';
+'use client';
 
 import { useState } from 'react';
-
-export const metadata = {
-  title: 'Vehicle Health Dashboard | Membership Auto',
-  description: 'Monitor your vehicle health, diagnostics, and maintenance schedule',
-};
 
 export default function HealthDashboardPage() {
   return (
