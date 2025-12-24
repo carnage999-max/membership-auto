@@ -170,9 +170,9 @@ export default function ForgotPasswordPage() {
         <div className="mt-8 text-center text-sm text-[var(--text-secondary)]">
           <p>
             Not receiving the email?{' '}
-            <a href="/contact" className="text-[var(--gold)] hover:text-[#d8b87f] transition-colors">
+            <Link href="/contact" className="text-[var(--gold)] hover:text-[#d8b87f] transition-colors">
               Contact support
-            </a>
+            </Link>
           </p>
         </div>
       </div>
