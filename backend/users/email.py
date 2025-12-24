@@ -1,22 +1,21 @@
 """Email utilities for user-related communications using Resend"""
 
-from resend import Resend
-from django.conf import settings
 import os
+import resend
+from django.conf import settings
 
-
-# Initialize Resend client
-resend_client = Resend(api_key=os.getenv("RESEND_API_KEY", ""))
+# Set the API key for resend
+resend.api_key = os.getenv("RESEND_API_KEY", "")
 
 
 def send_welcome_email(user_email, user_name=None):
     """Send welcome email to new user"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": user_email,
             "subject": "Welcome to Membership Auto!",
@@ -55,12 +54,12 @@ def send_welcome_email(user_email, user_name=None):
 
 def send_membership_confirmation_email(user_email, user_name, plan_name, amount, renewal_date):
     """Send confirmation email after successful membership purchase"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": user_email,
             "subject": f"Membership Confirmed - {plan_name} Plan",
@@ -101,14 +100,14 @@ def send_membership_confirmation_email(user_email, user_name, plan_name, amount,
 
 def send_password_reset_email(user_email, reset_token, user_name=None):
     """Send password reset email with reset link"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     reset_url = f"{settings.FRONTEND_URL}/auth/reset-password?token={reset_token}"
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": user_email,
             "subject": "Reset Your Membership Auto Password",
@@ -155,12 +154,12 @@ def send_password_reset_email(user_email, reset_token, user_name=None):
 
 def send_appointment_confirmation_email(user_email, user_name, appointment_details):
     """Send appointment confirmation email"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": user_email,
             "subject": f"Appointment Confirmed - {appointment_details.get('service_type', 'Service')}",
@@ -201,12 +200,12 @@ def send_appointment_confirmation_email(user_email, user_name, appointment_detai
 
 def send_billing_reminder_email(user_email, user_name, plan_name, renewal_date):
     """Send billing reminder email before renewal"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": user_email,
             "subject": f"Membership Renewal Reminder - {plan_name} Plan",
@@ -246,12 +245,12 @@ def send_billing_reminder_email(user_email, user_name, plan_name, renewal_date):
 
 def send_contact_form_email(name, email, phone, user_type, message):
     """Send contact form submission to support team"""
-    if not resend_client.api_key:
+    if not resend.api_key:
         print("RESEND_API_KEY not configured. Skipping email send.")
         return False
     
     try:
-        resend_client.emails.send({
+        resend.emails.send({
             "from": settings.DEFAULT_FROM_EMAIL,
             "to": "nathan@membershipauto.com",
             "subject": f"New Contact Form Submission from {name}",
