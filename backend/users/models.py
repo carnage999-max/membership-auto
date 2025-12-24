@@ -32,6 +32,7 @@ class User(AbstractBaseUser):
     rewards_balance = models.IntegerField(default=0)
     role = models.TextField(default="member")
     settings = models.JSONField(default=dict, blank=True)
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     # Django admin permissions

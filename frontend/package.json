@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^2.4.1",
+    "@stripe/stripe-js": "^3.0.4",
     "axios": "^1.13.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.555.0",

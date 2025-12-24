@@ -2,14 +2,151 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader } from 'lucide-react';
+import { useAuth } from '@/lib/context/AuthContext';
+import { useRouter } from 'next/navigation';
+
+interface Plan {
+  id: string;
+  name: string;
+  price_monthly: number;
+  tier?: string;
+  features?: string[];
+}
 
 export default function PlansPage() {
-  const [currentPlanIndex, setCurrentPlanIndex] = useState(2); // Start with Premium (index 2)
+  const [currentPlanIndex, setCurrentPlanIndex] = useState(2);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingPayment, setLoadingPayment] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Sample featured plans (fallback if backend fails)
+  const DEFAULT_PLANS: Plan[] = [
+    {
+      id: '1',
+      name: "Basic",
+      price_monthly: 59,
+      tier: "compact",
+      features: [
+        "All basic maintenance",
+        "Oil changes",
+        "Tire rotations",
+        "Basic diagnostics",
+      ],
+    },
+    {
+      id: '2',
+      name: "Plus",
+      price_monthly: 79,
+      tier: "mid-size",
+      features: [
+        "Everything in Basic",
+        "Brake service",
+        "Belt replacements",
+        "Fluid flushes",
+      ],
+    },
+    {
+      id: '3',
+      name: "Premium",
+      price_monthly: 99,
+      tier: "suv",
+      features: [
+        "Everything in Plus",
+        "Engine repairs",
+        "Transmission service",
+        "Advanced diagnostics",
+      ],
+    },
+    {
+      id: '4',
+      name: "Elite",
+      price_monthly: 159,
+      tier: "luxury",
+      features: [
+        "Everything in Premium",
+        "Premium parts",
+        "Priority scheduling",
+        "Concierge service",
+      ],
+    },
+  ];
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/payments/plans/');
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data.length > 0 ? data : DEFAULT_PLANS);
+      } else {
+        setPlans(DEFAULT_PLANS);
+      }
+    } catch (err) {
+      console.error('Failed to fetch plans:', err);
+      setPlans(DEFAULT_PLANS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpgrade = async (plan: Plan) => {
+    // Check if user is logged in
+    if (!user) {
+      router.push('/auth/login?redirect=/plans');
+      return;
+    }
+
+    try {
+      setLoadingPayment(plan.id);
+      setError('');
+
+      // Create payment intent
+      const response = await fetch('/api/payments/create-payment-intent/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+        body: JSON.stringify({
+          plan_id: plan.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create payment intent');
+      }
+
+      const data = await response.json();
+      
+      // Navigate to checkout
+      sessionStorage.setItem('paymentIntent', JSON.stringify({
+        client_secret: data.client_secret,
+        payment_id: data.payment_id,
+        amount: data.amount,
+        plan_name: plan.name,
+        publishable_key: data.publishable_key,
+      }));
+
+      router.push('/checkout');
+    } catch (err) {
+      setError('Failed to start payment. Please try again.');
+      console.error('Payment error:', err);
+    } finally {
+      setLoadingPayment(null);
+    }
+  };
 
   const handlePrevPlan = () => {
     setCurrentPlanIndex((prev) => (prev > 0 ? prev - 1 : plans.length - 1));
@@ -29,64 +166,12 @@ export default function PlansPage() {
 
   const handleTouchEnd = () => {
     if (touchStartX.current - touchEndX.current > 50) {
-      // Swipe left - next plan
       handleNextPlan();
     }
     if (touchStartX.current - touchEndX.current < -50) {
-      // Swipe right - previous plan
       handlePrevPlan();
     }
   };
-  const plans = [
-    {
-      name: "Basic",
-      price: 59,
-      vehicles: "Compact Cars",
-      examples: "Corolla, Civic, Sentra",
-      features: [
-        "All basic maintenance",
-        "Oil changes",
-        "Tire rotations",
-        "Basic diagnostics",
-      ],
-    },
-    {
-      name: "Plus",
-      price: 79,
-      vehicles: "Mid-Size Cars",
-      examples: "Camry, Accord, Malibu",
-      features: [
-        "Everything in Basic",
-        "Brake service",
-        "Belt replacements",
-        "Fluid flushes",
-      ],
-    },
-    {
-      name: "Premium",
-      price: 99,
-      vehicles: "SUVs & Trucks",
-      examples: "F-150, Tahoe, Explorer",
-      features: [
-        "Everything in Plus",
-        "Engine repairs",
-        "Transmission service",
-        "Advanced diagnostics",
-      ],
-    },
-    {
-      name: "Elite",
-      price: 159,
-      vehicles: "Luxury/Performance",
-      examples: "BMW, Lexus, Tesla",
-      features: [
-        "Everything in Premium",
-        "Premium parts",
-        "Priority scheduling",
-        "Concierge service",
-      ],
-    },
-  ];
 
   const covered = [
     "Brakes",
@@ -112,6 +197,19 @@ export default function PlansPage() {
     "Pre-existing issues",
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex items-center justify-center">
+        <div className="text-center">
+          <Loader className="w-8 h-8 animate-spin text-[var(--gold)] mx-auto mb-4" />
+          <p>Loading plans...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const displayedPlans = plans.length > 0 ? plans : DEFAULT_PLANS;
+
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       {/* Header */}
@@ -123,6 +221,13 @@ export default function PlansPage() {
         </div>
       </section>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-900/20 border border-red-500 text-red-400 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
       {/* Plan Grid */}
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,15 +237,15 @@ export default function PlansPage() {
               {/* Card Container */}
               <div 
                 className="relative overflow-hidden"
-                style={{ minHeight: '600px' }}
+                style={{ minHeight: '650px' }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
                 {/* Current Plan Card */}
-                {plans.map((plan, index) => (
+                {displayedPlans.map((plan, index) => (
                   <div
-                    key={plan.name}
+                    key={plan.id}
                     className={`absolute inset-0 transition-all duration-500 ${
                       index === currentPlanIndex 
                         ? 'opacity-100 scale-100 pointer-events-auto' 
@@ -157,21 +262,12 @@ export default function PlansPage() {
                       <div className="text-center mb-6">
                         <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                         <div className="mb-4">
-                          <span className="text-4xl font-bold">${plan.price}</span>
+                          <span className="text-4xl font-bold">${plan.price_monthly}</span>
                           <span className="text-lg">/mo</span>
                         </div>
-                        <p className="text-sm text-[var(--text-secondary)] mb-2 font-semibold">
-                          Vehicles Covered
-                        </p>
-                        <p className="text-sm text-[var(--text-secondary)]">
-                          {plan.vehicles}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-2">
-                          {plan.examples}
-                        </p>
                       </div>
                       <ul className="space-y-3 mb-8">
-                        {plan.features.map((feature, i) => (
+                        {(plan.features || []).map((feature, i) => (
                           <li key={i} className="flex items-start">
                             <svg
                               className={`w-5 h-5 mr-2 flex-shrink-0 mt-0.5 ${
@@ -194,22 +290,30 @@ export default function PlansPage() {
                           </li>
                         ))}
                       </ul>
-                      <Link
-                        href="/signup"
-                        className={`block w-full text-center py-3 px-6 rounded-full font-semibold transition-all duration-200 ${
+                      <button
+                        onClick={() => handleUpgrade(plan)}
+                        disabled={loadingPayment === plan.id}
+                        className={`block w-full text-center py-3 px-6 rounded-full font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                           index === 2
-                            ? "bg-[var(--gold)] text-[#0d0d0d] hover:bg-[#d8b87f] shadow-lg hover:shadow-xl"
-                            : "bg-transparent border border-[var(--gold)] text-[var(--gold)] hover:bg-[rgba(203,168,110,0.1)]"
+                            ? "bg-[var(--gold)] text-[#0d0d0d] hover:bg-[#d8b87f] shadow-lg hover:shadow-xl disabled:opacity-50"
+                            : "bg-transparent border border-[var(--gold)] text-[var(--gold)] hover:bg-[rgba(203,168,110,0.1)] disabled:opacity-50"
                         }`}
                       >
-                        Sign Up Now
-                      </Link>
+                        {loadingPayment === plan.id ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Upgrade Now'
+                        )}
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Navigation Arrows - Outside card container */}
+              {/* Navigation Arrows */}
               <div className="flex items-center justify-between mt-6">
                 <button
                   onClick={handlePrevPlan}
@@ -221,7 +325,7 @@ export default function PlansPage() {
 
                 {/* Plan Indicators */}
                 <div className="flex gap-2">
-                  {plans.map((_, index) => (
+                  {displayedPlans.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentPlanIndex(index)}
@@ -244,7 +348,6 @@ export default function PlansPage() {
                 </button>
               </div>
 
-              {/* Swipe Hint */}
               <p className="text-center text-sm text-[var(--text-muted)] mt-4">
                 Swipe or use arrows to view other plans
               </p>
@@ -253,10 +356,10 @@ export default function PlansPage() {
 
           {/* Desktop Grid */}
           <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            {plans.map((plan, index) => (
+            {displayedPlans.map((plan, index) => (
               <div
-                key={plan.name}
-                className={`rounded-lg shadow-lg p-8 transition-all duration-300 cursor-pointer ${
+                key={plan.id}
+                className={`rounded-lg shadow-lg p-8 transition-all duration-300 ${
                   index === 2
                     ? "bg-[var(--surface)] text-[var(--foreground)] transform scale-105 border border-[var(--gold)] shadow-xl hover:scale-110 hover:shadow-2xl hover:border-[#d8b87f]"
                     : "bg-[var(--surface)] border border-[var(--border-color)] text-[var(--foreground)] hover:scale-105 hover:border-[var(--gold)] hover:shadow-2xl hover:-translate-y-2"
@@ -265,21 +368,12 @@ export default function PlansPage() {
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold">${plan.price}</span>
+                    <span className="text-4xl font-bold">${plan.price_monthly}</span>
                     <span className="text-lg">/mo</span>
                   </div>
-                  <p className="text-sm text-[var(--text-secondary)] mb-2 font-semibold">
-                    Vehicles Covered
-                  </p>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    {plan.vehicles}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)] mt-2">
-                    {plan.examples}
-                  </p>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
+                  {(plan.features || []).map((feature, i) => (
                     <li key={i} className="flex items-start">
                       <svg
                         className={`w-5 h-5 mr-2 flex-shrink-0 mt-0.5 ${
@@ -302,16 +396,24 @@ export default function PlansPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/signup"
-                  className={`block w-full text-center py-3 px-6 rounded-full font-semibold transition-all duration-200 ${
+                <button
+                  onClick={() => handleUpgrade(plan)}
+                  disabled={loadingPayment === plan.id}
+                  className={`block w-full text-center py-3 px-6 rounded-full font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                     index === 2
-                      ? "bg-[var(--gold)] text-[#0d0d0d] hover:bg-[#d8b87f] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                      : "bg-transparent border border-[var(--gold)] text-[var(--gold)] hover:bg-[rgba(203,168,110,0.1)]"
+                      ? "bg-[var(--gold)] text-[#0d0d0d] hover:bg-[#d8b87f] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50"
+                      : "bg-transparent border border-[var(--gold)] text-[var(--gold)] hover:bg-[rgba(203,168,110,0.1)] disabled:opacity-50"
                   }`}
                 >
-                  Sign Up Now
-                </Link>
+                  {loadingPayment === plan.id ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Upgrade Now'
+                  )}
+                </button>
               </div>
             ))}
           </div>
@@ -398,12 +500,12 @@ export default function PlansPage() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup"
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="inline-flex items-center justify-center px-8 py-4 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-full hover:bg-[#d8b87f] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Sign Up Now
-            </Link>
+              Choose a Plan
+            </button>
             <Link
               href="/contact"
               className="inline-flex items-center justify-center px-8 py-4 bg-transparent border-2 border-[var(--gold)] text-[var(--gold)] font-semibold rounded-full hover:bg-[rgba(203,168,110,0.1)] transition-all duration-200"

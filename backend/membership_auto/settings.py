@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     "parking",
     "vehicle_health",
     "settings",
+    "payments",
 ]
 
 MIDDLEWARE = [
