@@ -313,9 +313,9 @@ def savings(request):
     membership_cost = membership.plan.price_monthly or Decimal("0.00")
 
     # Calculate months of membership
-    if membership.start_date:
+    if membership.started_at:
         months_active = max(
-            1, (datetime.now().date() - membership.start_date).days // 30
+            1, (datetime.now().date() - membership.started_at.date()).days // 30
         )
     else:
         months_active = 1
