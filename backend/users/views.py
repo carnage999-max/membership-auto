@@ -162,7 +162,9 @@ def profile(request):
             "membership_plan": (
                 membership.plan.name if membership and membership.plan else None
             ),
-            "membership_status": membership.status if membership else "No Active Membership",
+            "membership_status": (
+                membership.status if membership else "No Active Membership"
+            ),
             "monthly_fee": (
                 membership.plan.price_monthly if membership and membership.plan else 0
             ),
@@ -171,8 +173,9 @@ def profile(request):
                 if membership and membership.next_billing_at
                 else None
             ),
-            "can_cancel": membership and membership.status == 'active',
-            "can_reactivate": membership and membership.status in ['expired', 'cancelled'],
+            "can_cancel": membership and membership.status == "active",
+            "can_reactivate": membership
+            and membership.status in ["expired", "cancelled"],
             "auto_renew": membership.auto_renew if membership else False,
             "referral_code": user.referral_code,
             "rewards_balance": user.rewards_balance,
@@ -268,7 +271,7 @@ def savings(request):
                 "membership_plan": None,
                 "monthly_fee": 0.0,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
 
     # Calculate savings from appointments
@@ -350,115 +353,110 @@ def savings(request):
     return Response(response_data, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def cancel_membership(request):
     """Cancel user's active membership"""
     from django.utils import timezone
     from .email import send_cancellation_confirmation_email
-    
+
     user = request.user
-    reason = request.data.get('reason', '')
-    
+    reason = request.data.get("reason", "")
+
     try:
         # Get active membership
-        membership = Membership.objects.get(user=user, status='active')
+        membership = Membership.objects.get(user=user, status="active")
     except Membership.DoesNotExist:
         return Response(
-            {'error': 'No active membership to cancel'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "No active membership to cancel"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
     # Cancel the membership
-    membership.status = 'cancelled'
+    membership.status = "cancelled"
     membership.cancelled_at = timezone.now()
     membership.save()
-    
+
     # Send confirmation email
     send_cancellation_confirmation_email(
-        user.email,
-        user.name,
-        membership.plan.name if membership.plan else 'Premium'
+        user.email, user.name, membership.plan.name if membership.plan else "Premium"
     )
-    
+
     return Response(
         {
-            'message': 'Membership cancelled successfully',
-            'membership_status': membership.status,
-            'cancelled_at': membership.cancelled_at.isoformat()
+            "message": "Membership cancelled successfully",
+            "membership_status": membership.status,
+            "cancelled_at": membership.cancelled_at.isoformat(),
         },
-        status=status.HTTP_200_OK
+        status=status.HTTP_200_OK,
     )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def reactivate_membership(request):
     """Reactivate an expired or cancelled membership"""
     from django.utils import timezone
     from datetime import timedelta
-    
+
     user = request.user
-    
+
     try:
         # Get expired/cancelled membership
         membership = Membership.objects.get(
-            user=user, 
-            status__in=['expired', 'cancelled']
+            user=user, status__in=["expired", "cancelled"]
         )
     except Membership.DoesNotExist:
         return Response(
-            {'error': 'No inactive membership to reactivate'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "No inactive membership to reactivate"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
     # Reactivate the membership
-    membership.status = 'active'
+    membership.status = "active"
     membership.started_at = timezone.now()
     membership.next_billing_at = timezone.now() + timedelta(days=30)
     membership.expiry_reminder_sent = False
     membership.renewal_failed_count = 0
     membership.cancelled_at = None
     membership.save()
-    
+
     return Response(
         {
-            'message': 'Membership reactivated successfully',
-            'membership_status': membership.status,
-            'renewal_date': membership.next_billing_at.isoformat()
+            "message": "Membership reactivated successfully",
+            "membership_status": membership.status,
+            "renewal_date": membership.next_billing_at.isoformat(),
         },
-        status=status.HTTP_200_OK
+        status=status.HTTP_200_OK,
     )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def toggle_auto_renew(request):
     """Toggle auto-renewal for membership"""
     user = request.user
-    auto_renew = request.data.get('auto_renew')
-    
+    auto_renew = request.data.get("auto_renew")
+
     if auto_renew is None:
         return Response(
-            {'error': 'auto_renew parameter is required'},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": "auto_renew parameter is required"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    
+
     try:
         membership = Membership.objects.get(user=user)
         membership.auto_renew = bool(auto_renew)
         membership.save()
-        
+
         return Response(
             {
-                'message': f'Auto-renewal {"enabled" if auto_renew else "disabled"}',
-                'auto_renew': membership.auto_renew
+                "message": f'Auto-renewal {"enabled" if auto_renew else "disabled"}',
+                "auto_renew": membership.auto_renew,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
     except Membership.DoesNotExist:
         return Response(
-            {'error': 'No membership found'},
-            status=status.HTTP_404_NOT_FOUND
+            {"error": "No membership found"}, status=status.HTTP_404_NOT_FOUND
         )
-

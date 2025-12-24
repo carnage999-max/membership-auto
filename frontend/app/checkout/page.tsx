@@ -56,7 +56,11 @@ function CheckoutForm() {
         {
           payment_method: {
             card: elements.getElement(CardElement)!,
+            billing_details: {
+              email: paymentInfo.email || undefined,
+            },
           },
+          // save_payment_method will be handled by setup_future_usage on server
         }
       );
 
