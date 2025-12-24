@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "./components/Footer";
-import MarketingNav from "./components/MarketingNav";
+import RootLayoutClient from "./layout-client";
 import { AuthProvider } from "../lib/context/AuthContext";
 import "./globals.css";
 
@@ -32,10 +32,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--background)] text-[var(--foreground)]`}
       >
         <AuthProvider>
-        <MarketingNav />
-
-          {children}
-          
+          <RootLayoutClient>
+            {children}
+          </RootLayoutClient>
           <Footer />
         </AuthProvider>
       </body>
