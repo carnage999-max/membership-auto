@@ -70,10 +70,10 @@ export default function ProfilePage() {
           email: data.email,
           phone: data.phone || '',
           membershipId: data.membership_id || 'N/A',
-          membershipPlan: data.membership_plan || 'Premium',
-          membershipStatus: data.membership_status || 'active',
-          renewalDate: data.renewal_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          monthlyFee: data.monthly_fee || 99,
+          membershipPlan: data.membership_plan,
+          membershipStatus: data.membership_status || 'No Active Membership',
+          renewalDate: data.renewal_date,
+          monthlyFee: data.monthly_fee || 0,
         };
         setProfile(userProfile);
         setEditedProfile(userProfile);
@@ -553,31 +553,46 @@ export default function ProfilePage() {
           {/* Membership Details Sidebar */}
           <div className="space-y-6">
             {/* Membership Card */}
-            <div className="bg-gradient-to-br from-[var(--gold)] to-[#a88850] rounded-lg p-6 text-[#0d0d0d]">
-              <h3 className="text-lg font-bold mb-4">Membership Details</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs opacity-80">Member ID</p>
-                  <p className="font-mono font-bold">{profile.membershipId}</p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-80">Plan</p>
-                  <p className="text-2xl font-bold">{profile.membershipPlan}</p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-80">Status</p>
-                  <p className="font-semibold capitalize">{profile.membershipStatus}</p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-80">Monthly Fee</p>
-                  <p className="text-xl font-bold">${profile.monthlyFee}/mo</p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-80">Next Renewal</p>
-                  <p className="font-semibold">{new Date(profile.renewalDate).toLocaleDateString()}</p>
+            {profile.membershipStatus === 'No Active Membership' ? (
+              <div className="bg-gradient-to-br from-[var(--gold)] to-[#a88850] rounded-lg p-6 text-[#0d0d0d]">
+                <h3 className="text-lg font-bold mb-4">Membership Details</h3>
+                <div className="space-y-3">
+                  <p className="text-sm opacity-80">You don't have an active membership yet.</p>
+                  <p className="text-xs opacity-70 mb-4">
+                    Upgrade to a membership plan to unlock exclusive benefits and services.
+                  </p>
+                  <button className="w-full px-4 py-2 bg-[#0d0d0d] text-[var(--gold)] font-semibold rounded-lg hover:bg-opacity-90 transition-colors">
+                    View Membership Plans
+                  </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-gradient-to-br from-[var(--gold)] to-[#a88850] rounded-lg p-6 text-[#0d0d0d]">
+                <h3 className="text-lg font-bold mb-4">Membership Details</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs opacity-80">Member ID</p>
+                    <p className="font-mono font-bold">{profile.membershipId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-80">Plan</p>
+                    <p className="text-2xl font-bold">{profile.membershipPlan}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-80">Status</p>
+                    <p className="font-semibold capitalize">{profile.membershipStatus}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-80">Monthly Fee</p>
+                    <p className="text-xl font-bold">${profile.monthlyFee}/mo</p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-80">Next Renewal</p>
+                    <p className="font-semibold">{profile.renewalDate ? new Date(profile.renewalDate).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Billing Information */}
             <div className="bg-[var(--surface)] rounded-lg border border-[var(--border-color)] p-6">
@@ -607,18 +622,22 @@ export default function ProfilePage() {
             <div className="bg-[var(--surface)] rounded-lg border border-[var(--border-color)] p-6">
               <h3 className="text-lg font-bold text-[var(--foreground)] mb-4">Quick Actions</h3>
               <div className="space-y-2">
-                <button
-                  onClick={downloadMembershipCard}
-                  className="w-full px-4 py-2 text-left text-[var(--text-secondary)] hover:text-[var(--gold)] hover:bg-[var(--background)] rounded transition-colors"
-                >
-                  Download Membership Card
-                </button>
+                {profile.membershipStatus !== 'No Active Membership' && (
+                  <button
+                    onClick={downloadMembershipCard}
+                    className="w-full px-4 py-2 text-left text-[var(--text-secondary)] hover:text-[var(--gold)] hover:bg-[var(--background)] rounded transition-colors"
+                  >
+                    Download Membership Card
+                  </button>
+                )}
                 <button className="w-full px-4 py-2 text-left text-[var(--text-secondary)] hover:text-[var(--gold)] hover:bg-[var(--background)] rounded transition-colors">
                   Contact Support
                 </button>
-                <button className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-900/20 rounded transition-colors">
-                  Cancel Membership
-                </button>
+                {profile.membershipStatus !== 'No Active Membership' && (
+                  <button className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-900/20 rounded transition-colors">
+                    Cancel Membership
+                  </button>
+                )}
               </div>
             </div>
           </div>
