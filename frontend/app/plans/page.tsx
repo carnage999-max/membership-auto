@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Loader } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
+import { tokenStorage } from '@/lib/auth/tokenStorage';
 import { useRouter } from 'next/navigation';
 
 interface Plan {
@@ -86,7 +87,7 @@ export default function PlansPage() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/payments/plans/');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payments/plans/`);
       if (response.ok) {
         const data = await response.json();
         setPlans(data.length > 0 ? data : DEFAULT_PLANS);
@@ -117,7 +118,7 @@ export default function PlansPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${tokenStorage.getAccessToken()}`,
         },
         body: JSON.stringify({
           plan_id: plan.id,
