@@ -6,6 +6,9 @@ WORKDIR /app
 # Increase Node.js memory for build
 ENV NODE_OPTIONS="--max-old-space-size=512"
 
+# Copy npm config first (for legacy-peer-deps)
+COPY .npmrc ./
+
 # Copy package files
 COPY package*.json ./
 
