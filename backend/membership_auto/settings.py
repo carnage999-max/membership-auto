@@ -250,3 +250,9 @@ AWS_S3_PRESIGNED_URL_EXPIRATION = int(
     os.getenv("AWS_S3_PRESIGNED_URL_EXPIRATION", "3600")
 )  # 1 hour default
 USE_S3 = os.getenv("USE_S3", "false").lower() == "true"
+# Email Configuration
+# Using Resend for email delivery
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@membershipauto.com")
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", "noreply@membershipauto.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://membershipauto.com")
