@@ -160,11 +160,11 @@ def profile(request):
             "phone": user.phone or "",
             "membership_id": user.membership_id or f"MEM-{str(user.id)[:8].upper()}",
             "membership_plan": (
-                membership.plan.name if membership and membership.plan else "Premium"
+                membership.plan.name if membership and membership.plan else None
             ),
-            "membership_status": membership.status if membership else "active",
+            "membership_status": membership.status if membership else "No Active Membership",
             "monthly_fee": (
-                membership.plan.price_monthly if membership and membership.plan else 99
+                membership.plan.price_monthly if membership and membership.plan else 0
             ),
             "renewal_date": (
                 membership.next_billing_at.isoformat()
