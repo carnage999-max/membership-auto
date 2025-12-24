@@ -112,8 +112,18 @@ WSGI_APPLICATION = "membership_auto.wsgi.application"
 # Database configuration
 # Use PostgreSQL if available, otherwise fall back to SQLite for development
 import os
+import dj_database_url
 
-if os.getenv("USE_POSTGRES", "false").lower() == "true":
+if os.getenv("DATABASE_URL"):
+    # Use dj_database_url to parse the DATABASE_URL (for production)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif os.getenv("USE_POSTGRES", "false").lower() == "true":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
