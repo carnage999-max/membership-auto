@@ -46,7 +46,7 @@ export default function ForgotPasswordForm() {
       <div className="w-full max-w-md">
         {/* Back Link */}
         <Link
-          href="/auth/login"
+          href="/login"
           className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--gold)] transition-colors mb-8"
         >
           <ArrowLeft size={20} />
@@ -119,7 +119,7 @@ export default function ForgotPasswordForm() {
 
               {/* Login Link */}
               <Link
-                href="/auth/login"
+                href="/login"
                 className="block w-full px-4 py-3 border border-[var(--border-color)] text-[var(--foreground)] font-semibold rounded-lg hover:border-[var(--gold)] hover:text-[var(--gold)] transition-colors text-center"
               >
                 Back to Login
@@ -144,7 +144,7 @@ export default function ForgotPasswordForm() {
                 </p>
 
                 <Link
-                  href="/auth/login"
+                  href="/login"
                   className="block w-full px-4 py-3 bg-[var(--gold)] text-[#0d0d0d] font-semibold rounded-lg hover:bg-[#d8b87f] transition-colors"
                 >
                   Back to Login
