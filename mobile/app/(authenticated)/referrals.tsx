@@ -22,7 +22,7 @@ import {
   Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Clipboard from '@react-native-clipboard/clipboard';
+import * as Clipboard from 'expo-clipboard';
 import useToastStore from '@/utils/stores/toast-store';
 
 const ReferralsScreen = () => {
@@ -48,7 +48,7 @@ const ReferralsScreen = () => {
 
   const handleCopyCode = async () => {
     if (referralData?.referral_code) {
-      Clipboard.setString(referralData.referral_code);
+      await Clipboard.setStringAsync(referralData.referral_code);
       setToast({
         type: 'success',
         message: 'Referral code copied to clipboard!',
@@ -58,7 +58,7 @@ const ReferralsScreen = () => {
 
   const handleCopyLink = async () => {
     if (referralData?.referral_link) {
-      Clipboard.setString(referralData.referral_link);
+      await Clipboard.setStringAsync(referralData.referral_link);
       setToast({
         type: 'success',
         message: 'Referral link copied to clipboard!',
