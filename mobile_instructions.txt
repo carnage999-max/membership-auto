@@ -1,0 +1,388 @@
+Here’s the blueprint your devs need.
+
+⸻
+
+1. Core Goals
+	•	Single Membership Auto app for iOS + Android.
+	•	Authenticated access to Future Tech backend (membership, vehicles, service history, appointments, billing).
+	•	Live link to vehicle via OBD-II dongle/Reed device where possible; fallback for older vehicles.
+	•	Fuel-economy tracking with both automatic (OBD) and AI/assist manual modes.
+	•	Communication, referrals, push reminders, and location features as shown in your UI.
+
+⸻
+
+2. Recommended Tech Stack (guidance, not mandatory)
+
+Front end (mobile):
+	•	React Native (TypeScript) or Flutter.
+	•	Navigation: React Navigation (if RN) with stack + tab navigator.
+	•	State: Redux Toolkit / Zustand / Bloc (dev choice).
+	•	Secure storage: iOS Keychain / Android Keystore wrapper.
+
+Backend interface (Future Tech):
+	•	Token-based auth (JWT or Cognito-style).
+	•	REST or GraphQL; REST is assumed below.
+	•	Hosted on AWS (ALB / API Gateway + Lambdas or container services).
+
+3rd-party services:
+	•	Maps: Apple Maps + Google Maps via cross-platform maps SDK.
+	•	Push: Amazon SNS/Pinpoint or OneSignal (if you already use it).
+	•	Chat: custom WebSocket service OR hosted (Sendbird/Stream/Twilio Conversations).
+	•	Image/receipt OCR for pumps: your own AI endpoint or AWS Rekognition/Textract behind Future Tech.
+
+⸻
+
+3. High-Level Architecture
+	1.	App
+	•	Handles UI, local state, offline cache, Bluetooth connection to dongle.
+	•	Talks only to Future Tech API (and to the OBD dongle via BLE/Wi-Fi).
+	2.	Future Tech API
+	•	Auth / user management
+	•	Membership & vehicle data
+	•	Appointments & service recommendations
+	•	Referral tracking and rewards
+	•	Push notification orchestration
+	•	Chat back-end and message store
+	•	Fuel economy & telematics ingestion and analytics
+	•	Social link configuration (so you can change URLs without app update)
+	3.	Reed/OBD Device Integration Layer
+	•	App-side: BLE/Wi-Fi driver; requests standard PIDs (speed, fuel rate, fuel level, odometer if supported, DTCs).
+	•	Server-side (optional): if dongle already talks to your cloud, app just consumes it via Future Tech.
+
+⸻
+
+4. User Roles & Authentication
+
+Roles:
+	•	Customer (driver) — standard user.
+	•	Internal staff (optional future) — separate staff app or admin web.
+
+Flows:
+	1.	Sign Up
+	•	Inputs: email, phone, password, name, membership ID/verification code.
+	•	API: POST /auth/register.
+	•	Email/SMS verification optional but recommended.
+	2.	Login
+	•	POST /auth/login → returns { accessToken, refreshToken, userProfile }.
+	•	Tokens stored in secure storage; refresh handled transparently.
+	3.	Forgot Password
+	•	POST /auth/forgot-password (send code) + POST /auth/reset-password.
+	4.	Session Management
+	•	Refresh token flow.
+	•	Forced logout on invalid/expired tokens.
+
+⸻
+
+5. Main Features / Modules
+
+5.1 Dashboard (Home)
+	•	Greets user, shows:
+	•	Next scheduled service + “View Details” (duration, included jobs).
+	•	Membership status (plan, renewal date, remaining benefits).
+	•	Vehicle health snapshot (from OBD/Reed + Future Tech rules engine).
+	•	Quick buttons matching your gold icons:
+	•	Special Offers
+	•	Mileage Tracker
+	•	Parking Reminder
+	•	Help
+	•	Store Locator / Map
+	•	Contact Us
+	•	Referrals
+	•	Social icons
+
+⸻
+
+5.2 Vehicle & OBD / Reed Integration
+
+Data stored per vehicle:
+	•	VIN, year, make, model, trim.
+	•	License plate.
+	•	Odometer baseline.
+	•	Reed/dongle ID + connection type (BLE/Wi-Fi/cloud).
+
+App flows:
+	1.	Pair Reed Device
+	•	Screen: “Connect Your Vehicle”.
+	•	Steps:
+	•	Scan QR code on dongle or select from nearby BLE devices.
+	•	Associate dongle ID with vehicle via POST /vehicles/{id}/link-dongle.
+	•	Test connection: request sample PID (RPM or speed).
+	2.	Real-Time Vehicle Data
+	•	App polls the dongle over BLE at a fixed interval while driving OR reads last values from Future Tech if dongle streams to cloud.
+	•	Data points (minimum): speed, fuel rate or fuel used, odometer if supported, DTCs, coolant temp, fuel level.
+	•	App pushes telemetry batch to POST /telematics/{vehicleId} when trip ends or periodically.
+	3.	Vehicle List & Switcher
+	•	Support multiple vehicles per account (you’ve mentioned this elsewhere).
+	•	Allow user to select “active vehicle” for tracking, appointments, and offers.
+
+⸻
+
+5.3 Fuel Economy Tracking
+
+Mode A – Automatic (preferred, newer vehicles)
+	•	Use OBD PIDs:
+	•	Fuel used vs distance → instant and average MPG/L/100km.
+	•	App logic:
+	•	Each ignition cycle = “trip”; compute trip MPG and send to /vehicles/{id}/fuel-logs.
+	•	Show:
+	•	Avg MPG (last 30 days).
+	•	MPG per trip / tank.
+	•	Trend graph.
+
+Mode B – Assisted Manual (older vehicles)
+	•	“Add Fill-Up” button:
+	•	Step 1: Take photo of pump display / receipt.
+	•	Step 2: Optional photo of odometer.
+	•	Step 3: Manual confirmation/edit of fields AI extracts:
+	•	Gallons/liters filled, total cost, price per unit.
+	•	Current odometer (if readable; else user types it).
+	•	App sends image(s) → Future Tech AI endpoint:
+	•	POST /fuel-ocr returns structured values.
+	•	Mileage calc:
+	•	distance = current_odometer - last_odometer
+	•	mpg = distance / gallons.
+	•	Store in fuel_logs table and show same graphs/report as automatic mode.
+
+⸻
+
+5.4 Special Offers
+	•	Screen lists active promotions tailored by:
+	•	Membership level, vehicle, location, referral status.
+	•	Data from GET /offers?userId=&vehicleId=&location=.
+	•	Offers can include:
+	•	Description, expiry, terms, “Book Now” button.
+	•	“Book Now” pre-fills appointment scheduling with offer code.
+
+⸻
+
+5.5 Parking Reminder
+	•	Functionality:
+	•	Save current GPS location, timestamp, optional photos, notes, and level/spot.
+	•	One-tap “Mark My Parking Spot” + “Navigate to My Car”.
+	•	Optional timer with local push (“Parking meter expiring in 10 minutes”).
+
+⸻
+
+5.6 Help & Contact
+
+Help Screen:
+	•	FAQ links.
+	•	Membership inclusions summary.
+	•	“Call support” (tel link).
+	•	“Open chat” (see chat module).
+
+Contact Us Screen:
+	•	Simple cards: Call, Email, Chat, Open Ticket.
+	•	Optional form: POST /support/tickets.
+
+⸻
+
+5.7 Store Locator / Map
+	•	GET /locations?lat=&lng=&radius= returns Membership Auto service centers.
+	•	Map view + list view:
+	•	Each marker: Name, address, phone, distance, “Get Directions”, “Book Appointment”.
+	•	Deep link out to Apple/Google Maps for navigation.
+
+⸻
+
+5.8 Referral System (“Refer a Friend”)
+
+Business rules:
+	•	Referrer: gets 1 free month when friend converts to paying membership.
+	•	Friend: gets 50% off first month.
+
+Flow:
+	1.	Each user has unique referral code: REF-{shortId}.
+	•	API: GET /referrals/me returns { code, link } like https://membershipauto.com/r/REF-ABCD12.
+	2.	In-app actions:
+	•	“Share Link” (native share sheet: SMS, email, socials).
+	•	“Copy Code”.
+	•	“View Referral Status” (list of referred users, status: invited / signed up / credited).
+	3.	Backend responsibilities:
+	•	Track referrals: POST /referrals/apply when new user signs up with code or link.
+	•	Apply discounts and free month credit automatically.
+	•	Expose status to app via GET /referrals/me.
+
+⸻
+
+5.9 Appointments & Service Schedule
+
+Data model:
+	•	Appointment: id, vehicleId, locationId, date/time, services, estimatedDuration, status.
+	•	Recommended services: per vehicle, mileage, and program rules.
+
+Features:
+	1.	View Upcoming Appointments
+	•	GET /appointments/upcoming
+	•	Show: date/time, location, vehicle, services, estimated time, notes.
+	•	Tapping one shows detail, reschedule/cancel options (via API).
+	2.	Book Appointment
+	•	Flow:
+	•	Choose vehicle.
+	•	Choose location (map/list).
+	•	Choose service package (based on membership rules).
+	•	Choose date/time from available slots.
+	•	Confirm.
+	•	API: /appointments/availability, /appointments/book.
+	3.	Service Schedule View
+	•	“Next Scheduled Service” card on dashboard.
+	•	Screen listing:
+	•	All future recommended services with mileage/time triggers.
+	•	For each: estimated duration and included line items.
+
+⸻
+
+5.10 Push Notifications
+
+Uses:
+	•	Upcoming appointment reminders (e.g., 48h + 2h before).
+	•	Service due by time/mileage.
+	•	New special offers.
+	•	Chat message alerts.
+	•	Referral success (“Your friend just joined – 1 free month added”).
+
+Implementation outline:
+	1.	On login, app registers device token:
+	•	POST /devices/register { userId, platform, pushToken }.
+	2.	Backend sends via SNS/Pinpoint/OneSignal by user or segment.
+	3.	App handles:
+	•	Foreground: in-app banner.
+	•	Background: opens to relevant screen (deep links).
+
+⸻
+
+5.11 Chat / Two-Way Messaging
+
+Requirements:
+	•	Customer ↔ Membership Auto support chat inside the app.
+	•	Real-time when possible; push notifications when app closed.
+
+Technical outline:
+	•	API:
+	•	GET /chats/threads (user’s threads).
+	•	GET /chats/threads/{id}/messages.
+	•	POST /chats/threads/{id}/messages.
+	•	Real-time transport:
+	•	WebSocket channel per user or per thread.
+	•	Fallback: polling if WebSocket unavailable.
+	•	Push on new message:
+	•	Backend triggers push when agent replies.
+	•	UI:
+	•	Messaging screen with bubbles, timestamps, read indicator.
+	•	Attachment support (photos of car, invoices) in later phase.
+
+⸻
+
+5.12 Social Media Links
+	•	Configurable in backend so you can change URLs without app update.
+	•	GET /config/social returns:
+	•	facebookUrl, instagramUrl, xUrl, libertySocialUrl, etc.
+	•	App renders icons; tapping opens deep links (or webviews if app not installed).
+
+⸻
+
+6. Screen-by-Screen Outline
+	1.	Splash Screen
+	•	Membership Auto logo + tagline.
+	•	Checks auth token; routes to Login or Dashboard.
+	2.	Auth Stack
+	•	Login
+	•	Sign Up
+	•	Forgot Password
+	•	Terms/Privacy (webview or in-app content).
+	3.	Main Tabs / Sections
+	•	Dashboard (home)
+	•	Vehicles
+	•	Appointments
+	•	Offers
+	•	Account/Profile
+	4.	Dashboard
+	•	Banner: membership + next service.
+	•	Vehicle card (active vehicle, quick metrics).
+	•	Gold icon grid:
+	•	Special Offers
+	•	Mileage Tracker
+	•	Parking Reminder
+	•	Help
+	•	Store Locator
+	•	Contact Us
+	•	Refer a Friend
+	•	Social Icons row.
+	5.	Vehicles
+	•	List of vehicles.
+	•	Add/edit vehicle (scan VIN from windshield/registration via camera).
+	•	Reed/OBD pairing screen.
+	•	Per-vehicle:
+	•	Vehicle health (codes, alerts).
+	•	Fuel economy charts.
+	•	Service history.
+	6.	Mileage Tracker
+	•	Toggle: “Automatic via Vehicle Device” vs “Manual Fill-Ups”.
+	•	Charts: Avg MPG vs time, cost per mile, last fill-up.
+	•	“Add Fill-Up” flow with camera and OCR.
+	7.	Parking Reminder
+	•	Current saved spot (map + address, time).
+	•	Buttons: “Save New Spot”, “Navigate to Spot”.
+	•	Meter timer setting.
+	8.	Store Locator / Map
+	•	Map + list of locations; filters; details screen.
+	9.	Offers
+	•	List of offers; filter by vehicle/location.
+	•	Offer detail + “Book with this offer”.
+	10.	Appointments
+	•	List upcoming/past.
+	•	Book/reschedule/cancel.
+	•	Recommended service schedule.
+	11.	Chat
+	•	Thread list (or single “Support” thread).
+	•	Message view.
+	12.	Referrals
+	•	Referral summary, code, link.
+	•	Share button.
+	•	Earned rewards list.
+	13.	Profile / Account
+	•	Personal info, contact details.
+	•	Membership plan and billing info (read-only or update).
+	•	Notification settings.
+	•	Connected social accounts (optional).
+	•	Logout.
+
+⸻
+
+7. Data Models (API-level – minimal)
+
+Your backend team should expose or adapt:
+	•	User: id, name, email, phone, membershipId, referralCode, rewardsBalance.
+	•	Vehicle: id, userId, vin, year, make, model, trim, odometer, dongleId, fuelType.
+	•	TelematicsSnapshot: vehicleId, timestamp, odometer, fuelUsed, speedAvg, dtcList, etc.
+	•	FuelLog: id, vehicleId, timestamp, odometer, gallons, price, mpg.
+	•	Location: id, name, address, lat, lng, phone, hours.
+	•	Appointment: id, userId, vehicleId, locationId, startTime, endTime/estimatedDuration, services, status.
+	•	Offer: id, title, description, terms, expiry, eligibleMemberships, locations.
+	•	Referral: id, referrerUserId, referredUserId, status, rewardsApplied.
+	•	ChatThread / ChatMessage: standard messaging fields.
+	•	Config: social URLs, app settings.
+
+⸻
+
+8. Security / Compliance Notes
+	•	All API calls over HTTPS.
+	•	Store tokens only in encrypted secure storage.
+	•	Minimal PII on device; wipe on logout.
+	•	Obfuscate app for Android; use App Transport Security on iOS.
+	•	Rate-limit and authenticate telematics endpoints.
+
+⸻
+
+9. Deliverables for the Dev Team
+	1.	Mobile app repo (React Native or Flutter) with:
+	•	Auth flow wired to Future Tech test API.
+	•	Modular services layer (AuthService, VehicleService, AppointmentService, etc.).
+	•	Feature modules as listed above.
+	2.	API spec (OpenAPI/Swagger) for all listed endpoints so mobile and Future Tech stay in sync.
+	3.	Integration doc for Reed/OBD hardware:
+	•	BLE characteristics, expected PIDs, pairing flow, sample payloads.
+	4.	Push notification mapping doc:
+	•	Event → notification template → deep link target screen.
+
+If you hand them this outline and insist on token-based API contracts plus proper Reed device docs, they’ll have everything they need to build a real app, not a gimmick.
