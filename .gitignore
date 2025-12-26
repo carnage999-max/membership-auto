@@ -91,3 +91,4 @@ htmlcov/
 # Cache
 .cache/
 *.cache
+.claude/

@@ -34,7 +34,7 @@ const resetPasswordSchema = z
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-const ForgotPasswordScreen = () => {
+export default function ForgotPasswordScreen() {
   const [step, setStep] = useState<'request' | 'reset'>('request');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -261,7 +261,6 @@ const ForgotPasswordScreen = () => {
         )}
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-};
+  )
+}
 
-export default ForgotPasswordScreen;

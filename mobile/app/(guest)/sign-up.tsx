@@ -32,7 +32,7 @@ const signUpSchema = z
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
-const SignUpScreen = () => {
+export default function SignUpScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register, isLoading, error } = useAuthStore();
@@ -240,7 +240,6 @@ const SignUpScreen = () => {
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-};
+  )
+}
 
-export default SignUpScreen;
