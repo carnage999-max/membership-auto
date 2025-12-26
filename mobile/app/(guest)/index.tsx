@@ -13,7 +13,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { z } from 'zod';
 
@@ -24,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-const LoginScreen = () => {
+export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error } = useAuthStore();
 
@@ -44,7 +43,6 @@ const LoginScreen = () => {
     try {
       await login(data);
     } catch (err) {
-      // Error is handled by the store
       console.error('Login error:', err);
     }
   };
@@ -58,7 +56,6 @@ const LoginScreen = () => {
         contentContainerClassName="flex-grow justify-center px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Logo/Header */}
         <View className="mb-12 items-center">
           <Text className="mb-2 text-4xl font-bold text-gold">Membership Auto</Text>
           <Text className="text-base text-textSecondary">
@@ -66,14 +63,12 @@ const LoginScreen = () => {
           </Text>
         </View>
 
-        {/* Error Message */}
         {error && (
           <View className="mb-4 rounded-lg bg-error/10 border border-error/20 p-4">
             <Text className="text-sm text-error">{error}</Text>
           </View>
         )}
 
-        {/* Login Form */}
         <View className="mb-6">
           <Controller
             control={control}
@@ -130,7 +125,6 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Login Button */}
         <Button
           onPress={handleSubmit(onSubmit)}
           isLoading={isLoading}
@@ -140,7 +134,6 @@ const LoginScreen = () => {
           Log In
         </Button>
 
-        {/* Sign Up Link */}
         <View className="flex-row items-center justify-center">
           <Text className="text-sm text-textSecondary">Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(guest)/sign-up')}>
@@ -150,6 +143,4 @@ const LoginScreen = () => {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-};
-
-export default LoginScreen;
+}
