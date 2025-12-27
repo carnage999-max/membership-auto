@@ -78,9 +78,9 @@ export const vehicleService = {
       make: data.make,
       model: data.model,
       trim: data.trim,
-      license_plate: data.licensePlate,
+      licensePlate: data.licensePlate,
       odometer: data.odometer,
-      fuel_type: data.fuelType,
+      fuelType: data.fuelType,
     });
     return response.data;
   },
