@@ -77,8 +77,9 @@ class VehicleSerializer(serializers.ModelSerializer):
                     else:
                         image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
                 else:
-                    # File object case (multipart upload)
-                    image_file = image_data
+                    # File object case (multipart upload) - read the file content first
+                    image_file_content = image_data.read()
+                    image_file = ContentFile(image_file_content, name=f"vehicle_{vehicle.id}.jpg")
                 
                 filename = f"vehicles/{vehicle.id}.jpg"
                 
@@ -87,6 +88,7 @@ class VehicleSerializer(serializers.ModelSerializer):
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
+                    logger.info(f"Vehicle {vehicle.id} image uploaded to S3: {s3_url}")
             except ImportError as e:
                 logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
@@ -114,8 +116,9 @@ class VehicleSerializer(serializers.ModelSerializer):
                     else:
                         image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
                 else:
-                    # File object case (multipart upload)
-                    image_file = image_data
+                    # File object case (multipart upload) - read the file content first
+                    image_file_content = image_data.read()
+                    image_file = ContentFile(image_file_content, name=f"vehicle_{vehicle.id}.jpg")
                 
                 filename = f"vehicles/{vehicle.id}.jpg"
                 
@@ -124,6 +127,7 @@ class VehicleSerializer(serializers.ModelSerializer):
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
+                    logger.info(f"Vehicle {vehicle.id} image updated in S3: {s3_url}")
             except ImportError as e:
                 logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
