@@ -57,9 +57,8 @@ class VehicleSerializer(serializers.ModelSerializer):
             try:
                 # Upload image to S3 and save URL
                 from files.s3_utils import upload_file_to_s3
-
-                # Generate a unique filename
                 from pathlib import Path
+                
                 extension = Path(image.name).suffix
                 filename = f"vehicles/{vehicle.id}{extension}"
 
@@ -68,11 +67,16 @@ class VehicleSerializer(serializers.ModelSerializer):
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
+            except ImportError as e:
+                # Log import error
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
                 # Log the error but don't fail vehicle creation
-                print(f"Failed to upload vehicle image: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to upload vehicle image: {str(e)}", exc_info=True)
                 # Vehicle was created, just without the image
 
         return vehicle
@@ -85,9 +89,8 @@ class VehicleSerializer(serializers.ModelSerializer):
             try:
                 # Upload image to S3 and save URL
                 from files.s3_utils import upload_file_to_s3
-
-                # Generate a unique filename
                 from pathlib import Path
+                
                 extension = Path(image.name).suffix
                 filename = f"vehicles/{vehicle.id}{extension}"
 
@@ -96,11 +99,16 @@ class VehicleSerializer(serializers.ModelSerializer):
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
+            except ImportError as e:
+                # Log import error
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
                 # Log the error but don't fail vehicle update
-                print(f"Failed to upload vehicle image: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to upload vehicle image: {str(e)}", exc_info=True)
                 # Vehicle was updated, just without the image
 
         return vehicle
