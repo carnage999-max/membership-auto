@@ -119,7 +119,8 @@ def login(request):
 @permission_classes([AllowAny])
 def refresh_token(request):
     """Refresh access token using refresh token"""
-    refresh_token = request.data.get("refreshToken")
+    # Accept both 'refresh' and 'refreshToken' for compatibility
+    refresh_token = request.data.get("refresh") or request.data.get("refreshToken")
 
     if not refresh_token:
         return Response(
@@ -130,7 +131,11 @@ def refresh_token(request):
     try:
         refresh = RefreshToken(refresh_token)
         access_token = str(refresh.access_token)
-        return Response({"accessToken": access_token}, status=status.HTTP_200_OK)
+        # Return both formats for compatibility
+        return Response({
+            "access": access_token,
+            "accessToken": access_token
+        }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response(
             {"error": "Invalid refresh token"},
