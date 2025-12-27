@@ -22,19 +22,12 @@ class VehicleSerializer(serializers.ModelSerializer):
         source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
     )
     image = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True, help_text="Base64 encoded image or multipart file")
-    odometer = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
-    vin = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    make = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    model = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    trim = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    year = serializers.IntegerField(required=False, allow_null=True)
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
         model = Vehicle
         fields = [
             "id",
-            "user",
             "vin",
             "make",
             "model",
@@ -51,12 +44,19 @@ class VehicleSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
-            "user",
             "createdAt",
             "dongleId",
             "dongleConnectionType",
             "photoUrl",
         ]
+        extra_kwargs = {
+            'vin': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'make': {'allow_blank': True},
+            'model': {'allow_blank': True},
+            'trim': {'required': False, 'allow_blank': True, 'allow_null': True},
+            'year': {'required': False, 'allow_null': True},
+            'odometer': {'required': False, 'allow_null': True},
+        }
 
     def create(self, validated_data):
         image_data = validated_data.pop('image', None)
