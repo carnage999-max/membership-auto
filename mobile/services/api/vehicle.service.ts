@@ -41,15 +41,15 @@ export const vehicleService = {
     if (data.imageUri) {
       const formData = new FormData();
 
-      // Append vehicle data fields
+      // Append vehicle data fields (using camelCase field names as expected by Django serializer)
       if (data.vin) formData.append('vin', data.vin);
       if (data.year) formData.append('year', data.year.toString());
       formData.append('make', data.make);
       formData.append('model', data.model);
       if (data.trim) formData.append('trim', data.trim);
-      if (data.licensePlate) formData.append('license_plate', data.licensePlate);
+      if (data.licensePlate) formData.append('licensePlate', data.licensePlate);
       if (data.odometer) formData.append('odometer', data.odometer.toString());
-      if (data.fuelType) formData.append('fuel_type', data.fuelType);
+      if (data.fuelType) formData.append('fuelType', data.fuelType);
 
       // Append the image file
       const uri = data.imageUri;
