@@ -21,7 +21,7 @@ class VehicleSerializer(serializers.ModelSerializer):
     photoUrl = serializers.CharField(
         source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
     )
-    image = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True, help_text="Base64 encoded image or multipart file")
+    image = serializers.FileField(write_only=True, required=False, allow_null=True, help_text="Image file or base64 encoded image")
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -65,20 +65,19 @@ class VehicleSerializer(serializers.ModelSerializer):
         if image_data:
             try:
                 from files.s3_utils import upload_file_to_s3
-                from pathlib import Path
                 from django.core.files.base import ContentFile
                 import base64
                 
-                # Handle base64 encoded image
+                # Handle base64 string or file upload
                 if isinstance(image_data, str):
+                    # Base64 string case
                     if image_data.startswith('data:'):
-                        # Extract base64 part from data URI
                         header, encoded = image_data.split(',', 1)
                         image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
                     else:
-                        # Assume plain base64
                         image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
                 else:
+                    # File object case (multipart upload)
                     image_file = image_data
                 
                 filename = f"vehicles/{vehicle.id}.jpg"
@@ -106,16 +105,16 @@ class VehicleSerializer(serializers.ModelSerializer):
                 from django.core.files.base import ContentFile
                 import base64
                 
-                # Handle base64 encoded image
+                # Handle base64 string or file upload
                 if isinstance(image_data, str):
+                    # Base64 string case
                     if image_data.startswith('data:'):
-                        # Extract base64 part from data URI
                         header, encoded = image_data.split(',', 1)
                         image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
                     else:
-                        # Assume plain base64
                         image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
                 else:
+                    # File object case (multipart upload)
                     image_file = image_data
                 
                 filename = f"vehicles/{vehicle.id}.jpg"
