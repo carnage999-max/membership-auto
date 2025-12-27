@@ -18,6 +18,7 @@ import {
   Fuel,
   FileText,
   Tag,
+  Edit,
 } from 'lucide-react-native';
 import {
   RefreshControl,
@@ -65,6 +66,18 @@ const VehiclesScreen = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editFormData, setEditFormData] = useState<VehicleFormData>({
+    vin: '',
+    year: '',
+    make: '',
+    model: '',
+    trim: '',
+    licensePlate: '',
+    odometer: '',
+    fuelType: 'gasoline',
+  });
 
   // Inline toast state for modal
   const [inlineToast, setInlineToast] = useState<{
@@ -121,6 +134,33 @@ const VehiclesScreen = () => {
     },
   });
 
+  // Delete vehicle mutation
+  const deleteVehicleMutation = useMutation({
+    mutationFn: vehicleService.deleteVehicle,
+    onSuccess: () => {
+      showToast('success', 'Vehicle deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      handleCloseDetailModal();
+    },
+    onError: (error: any) => {
+      showInlineToast('error', error?.message || 'Failed to delete vehicle');
+    },
+  });
+
+  // Update vehicle mutation
+  const updateVehicleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Vehicle> }) =>
+      vehicleService.updateVehicle(id, data),
+    onSuccess: () => {
+      showToast('success', 'Vehicle updated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      handleCloseDetailModal();
+    },
+    onError: (error: any) => {
+      showInlineToast('error', error?.message || 'Failed to update vehicle');
+    },
+  });
+
   const handleSetActive = (vehicleId: string) => {
     setActiveVehicle(vehicleId);
   };
@@ -133,6 +173,8 @@ const VehiclesScreen = () => {
   const handleCloseDetailModal = () => {
     setShowDetailModal(false);
     setSelectedVehicle(null);
+    setIsEditMode(false);
+    setShowContextMenu(false);
   };
 
   const resetForm = () => {
@@ -642,10 +684,80 @@ const VehiclesScreen = () => {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
           {/* Modal Header */}
           <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
-            <Text className="text-xl font-bold text-foreground">Vehicle Details</Text>
-            <TouchableOpacity onPress={handleCloseDetailModal} activeOpacity={0.7}>
-              <X size={24} color="#707070" />
-            </TouchableOpacity>
+            <Text className="text-xl font-bold text-foreground">
+              {isEditMode ? 'Edit Vehicle' : 'Vehicle Details'}
+            </Text>
+            <View className="flex-row gap-2">
+              {!isEditMode && (
+                <View className="relative">
+                  <TouchableOpacity
+                    onPress={() => setShowContextMenu(!showContextMenu)}
+                    activeOpacity={0.7}
+                    className="p-2 rounded-lg bg-primary/10"
+                  >
+                    <Edit size={24} color="#cba86e" strokeWidth={2.5} />
+                  </TouchableOpacity>
+                  
+                  {/* iOS-style Context Menu Popup */}
+                  {showContextMenu && !isEditMode && (
+                    <>
+                      {/* Dismiss overlay */}
+                      <TouchableOpacity
+                        activeOpacity={1}
+                        onPress={() => setShowContextMenu(false)}
+                        className="absolute inset-0 z-40"
+                        style={{ width: '300%', height: '300%', left: -100, top: -100 }}
+                      />
+                      
+                      {/* Menu popup */}
+                      <View className="absolute right-0 top-12 bg-surface rounded-lg shadow-lg overflow-hidden border border-border z-50" style={{ minWidth: 200 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (selectedVehicle) {
+                              setEditFormData({
+                                vin: selectedVehicle.vin || '',
+                                year: selectedVehicle.year?.toString() || '',
+                                make: selectedVehicle.make || '',
+                                model: selectedVehicle.model || '',
+                                trim: selectedVehicle.trim || '',
+                                licensePlate: selectedVehicle.licensePlate || '',
+                                odometer: selectedVehicle.odometer?.toString() || '',
+                                fuelType: (selectedVehicle.fuelType as any) || 'gasoline',
+                              });
+                              setIsEditMode(true);
+                              setShowContextMenu(false);
+                            }
+                          }}
+                          className="px-4 py-3 flex-row items-center gap-3 border-b border-border"
+                          activeOpacity={0.7}
+                        >
+                          <Edit size={18} color="#cba86e" />
+                          <Text className="text-base text-foreground font-medium">Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowContextMenu(false);
+                            if (selectedVehicle) {
+                              showInlineToast('info', 'Deleting vehicle...');
+                              deleteVehicleMutation.mutate(selectedVehicle.id);
+                            }
+                          }}
+                          disabled={deleteVehicleMutation.isPending}
+                          className="px-4 py-3 flex-row items-center gap-3"
+                          activeOpacity={0.7}
+                        >
+                          <Trash2 size={18} color="#ef4444" />
+                          <Text className="text-base text-red-500 font-medium">Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
+              <TouchableOpacity onPress={handleCloseDetailModal} activeOpacity={0.7}>
+                <X size={24} color="#707070" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {selectedVehicle && (
@@ -654,113 +766,260 @@ const VehiclesScreen = () => {
               contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
               showsVerticalScrollIndicator={false}
             >
-              {/* Vehicle Image */}
-              {selectedVehicle.imageUrl ? (
-                <Image
-                  source={{ uri: selectedVehicle.imageUrl }}
-                  className="w-full h-56"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="w-full h-56 bg-surface items-center justify-center">
-                  <Car size={64} color="#707070" />
-                  <Text className="mt-2 text-sm text-textMuted">No image available</Text>
-                </View>
-              )}
-
-              <View className="p-4">
-                {/* Vehicle Title */}
-                <View className="items-center mb-6">
-                  <Text className="text-2xl font-bold text-foreground text-center">
-                    {selectedVehicle.year} {selectedVehicle.make}
-                  </Text>
-                  <Text className="text-lg text-textSecondary mt-1">
-                    {selectedVehicle.model} {selectedVehicle.trim && `• ${selectedVehicle.trim}`}
-                  </Text>
-                  {selectedVehicle.id === activeVehicleId && (
-                    <View className="mt-3 rounded-full bg-gold/20 px-4 py-1">
-                      <Text className="text-sm font-semibold text-gold">Active Vehicle</Text>
+              {!isEditMode ? (
+                <>
+                  {/* Vehicle Image */}
+                  {selectedVehicle.photoUrl ? (
+                    <Image
+                      source={{ uri: selectedVehicle.photoUrl }}
+                      className="w-full h-56"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-full h-56 bg-surface items-center justify-center">
+                      <Car size={64} color="#707070" />
+                      <Text className="mt-2 text-sm text-textMuted">No image available</Text>
                     </View>
                   )}
-                </View>
 
-                {/* Details Card */}
-                <Card className="mb-4">
-                  <Text className="text-sm font-semibold text-foreground mb-4">
-                    Vehicle Information
-                  </Text>
+                  <View className="p-4">
+                    {/* Vehicle Title */}
+                    <View className="items-center mb-6">
+                      <Text className="text-2xl font-bold text-foreground text-center">
+                        {selectedVehicle.year} {selectedVehicle.make}
+                      </Text>
+                      <Text className="text-lg text-textSecondary mt-1">
+                        {selectedVehicle.model} {selectedVehicle.trim && `• ${selectedVehicle.trim}`}
+                      </Text>
+                      {selectedVehicle.id === activeVehicleId && (
+                        <View className="mt-3 rounded-full bg-gold/20 px-4 py-1">
+                          <Text className="text-sm font-semibold text-gold">Active Vehicle</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Details Card */}
+                    <Card className="mb-4">
+                      <Text className="text-sm font-semibold text-foreground mb-4">
+                        Vehicle Information
+                      </Text>
+                      <View className="gap-4">
+                        {/* Odometer */}
+                        <View className="flex-row items-center">
+                          <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
+                            <Gauge size={20} color="#cba86e" />
+                          </View>
+                          <View className="ml-3 flex-1">
+                            <Text className="text-xs text-textMuted">Current Odometer</Text>
+                            <Text className="text-base font-semibold text-foreground">
+                              {selectedVehicle.odometer?.toLocaleString() || '0'} miles
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Fuel Type */}
+                        {selectedVehicle.fuelType && (
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
+                              <Fuel size={20} color="#cba86e" />
+                            </View>
+                            <View className="ml-3 flex-1">
+                              <Text className="text-xs text-textMuted">Fuel Type</Text>
+                              <Text className="text-base font-semibold text-foreground capitalize">
+                                {selectedVehicle.fuelType}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* VIN */}
+                        {selectedVehicle.vin && (
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
+                              <FileText size={20} color="#cba86e" />
+                            </View>
+                            <View className="ml-3 flex-1">
+                              <Text className="text-xs text-textMuted">VIN</Text>
+                              <Text className="text-base font-semibold text-foreground font-mono">
+                                {selectedVehicle.vin}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* License Plate */}
+                        {selectedVehicle.licensePlate && (
+                          <View className="flex-row items-center">
+                            <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
+                              <Tag size={20} color="#cba86e" />
+                            </View>
+                            <View className="ml-3 flex-1">
+                              <Text className="text-xs text-textMuted">License Plate</Text>
+                              <Text className="text-base font-semibold text-foreground">
+                                {selectedVehicle.licensePlate}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Health Status */}
+                        <View className="flex-row items-center">
+                          <View className="w-10 h-10 rounded-full bg-success/10 items-center justify-center">
+                            <CheckCircle2 size={20} color="#4caf50" />
+                          </View>
+                          <View className="ml-3 flex-1">
+                            <Text className="text-xs text-textMuted">Health Status</Text>
+                            <Text className="text-base font-semibold text-success">Good</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </Card>
+                  </View>
+                </>
+              ) : (
+                /* Edit Mode Form */
+                <View className="p-4">
                   <View className="gap-4">
+                    {/* Make */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Make *</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter vehicle make"
+                        placeholderTextColor="#707070"
+                        value={editFormData.make}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, make: value }))
+                        }
+                      />
+                    </View>
+
+                    {/* Model */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Model *</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter vehicle model"
+                        placeholderTextColor="#707070"
+                        value={editFormData.model}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, model: value }))
+                        }
+                      />
+                    </View>
+
+                    {/* Year */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Year</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter vehicle year"
+                        placeholderTextColor="#707070"
+                        keyboardType="numeric"
+                        value={editFormData.year}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, year: value }))
+                        }
+                      />
+                    </View>
+
+                    {/* Trim */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Trim</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter vehicle trim"
+                        placeholderTextColor="#707070"
+                        value={editFormData.trim}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, trim: value }))
+                        }
+                      />
+                    </View>
+
+                    {/* License Plate */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">License Plate</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter license plate"
+                        placeholderTextColor="#707070"
+                        value={editFormData.licensePlate}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, licensePlate: value }))
+                        }
+                      />
+                    </View>
+
                     {/* Odometer */}
-                    <View className="flex-row items-center">
-                      <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
-                        <Gauge size={20} color="#cba86e" />
-                      </View>
-                      <View className="ml-3 flex-1">
-                        <Text className="text-xs text-textMuted">Current Odometer</Text>
-                        <Text className="text-base font-semibold text-foreground">
-                          {selectedVehicle.odometer?.toLocaleString() || '0'} miles
-                        </Text>
-                      </View>
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Odometer (miles)</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter current odometer reading"
+                        placeholderTextColor="#707070"
+                        keyboardType="numeric"
+                        value={editFormData.odometer}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, odometer: value }))
+                        }
+                      />
+                    </View>
+
+                    {/* VIN */}
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">VIN</Text>
+                      <TextInput
+                        className="bg-surface rounded-lg px-4 py-3 text-foreground border border-border"
+                        placeholder="Enter VIN (optional)"
+                        placeholderTextColor="#707070"
+                        value={editFormData.vin}
+                        onChangeText={(value) =>
+                          setEditFormData((prev) => ({ ...prev, vin: value }))
+                        }
+                      />
                     </View>
 
                     {/* Fuel Type */}
-                    {selectedVehicle.fuelType && (
-                      <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
-                          <Fuel size={20} color="#cba86e" />
-                        </View>
-                        <View className="ml-3 flex-1">
-                          <Text className="text-xs text-textMuted">Fuel Type</Text>
-                          <Text className="text-base font-semibold text-foreground capitalize">
-                            {selectedVehicle.fuelType}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    {/* VIN */}
-                    {selectedVehicle.vin && (
-                      <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
-                          <FileText size={20} color="#cba86e" />
-                        </View>
-                        <View className="ml-3 flex-1">
-                          <Text className="text-xs text-textMuted">VIN</Text>
-                          <Text className="text-base font-semibold text-foreground font-mono">
-                            {selectedVehicle.vin}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    {/* License Plate */}
-                    {selectedVehicle.licensePlate && (
-                      <View className="flex-row items-center">
-                        <View className="w-10 h-10 rounded-full bg-gold/10 items-center justify-center">
-                          <Tag size={20} color="#cba86e" />
-                        </View>
-                        <View className="ml-3 flex-1">
-                          <Text className="text-xs text-textMuted">License Plate</Text>
-                          <Text className="text-base font-semibold text-foreground">
-                            {selectedVehicle.licensePlate}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    {/* Health Status */}
-                    <View className="flex-row items-center">
-                      <View className="w-10 h-10 rounded-full bg-success/10 items-center justify-center">
-                        <CheckCircle2 size={20} color="#4caf50" />
-                      </View>
-                      <View className="ml-3 flex-1">
-                        <Text className="text-xs text-textMuted">Health Status</Text>
-                        <Text className="text-base font-semibold text-success">Good</Text>
-                      </View>
+                    <View>
+                      <Text className="text-sm font-semibold text-foreground mb-2">Fuel Type</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        className="gap-2"
+                      >
+                        {FUEL_TYPES.map((type) => (
+                          <TouchableOpacity
+                            key={type.value}
+                            onPress={() =>
+                              setEditFormData((prev) => ({
+                                ...prev,
+                                fuelType: type.value as any,
+                              }))
+                            }
+                            className={`px-4 py-2 rounded-lg border-2 ${
+                              editFormData.fuelType === type.value
+                                ? 'border-gold bg-gold/10'
+                                : 'border-border bg-surface'
+                            }`}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              className={`text-sm font-medium ${
+                                editFormData.fuelType === type.value
+                                  ? 'text-gold'
+                                  : 'text-textSecondary'
+                              }`}
+                            >
+                              {type.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
                     </View>
                   </View>
-                </Card>
-              </View>
+                </View>
+              )}
             </ScrollView>
           )}
 
@@ -769,27 +1028,74 @@ const VehiclesScreen = () => {
             className="px-4 py-4 border-t border-border bg-background"
             style={{ paddingBottom: insets.bottom + 16 }}
           >
-            <View className="flex-row gap-3">
-              {selectedVehicle && selectedVehicle.id !== activeVehicleId && (
+            {!isEditMode ? (
+              <View className="flex-row gap-3">
+                {selectedVehicle && selectedVehicle.id !== activeVehicleId && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleSetActive(selectedVehicle.id);
+                      handleCloseDetailModal();
+                    }}
+                    className="flex-1 items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-base font-semibold text-gold">Set as Active</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  onPress={() => {
-                    handleSetActive(selectedVehicle.id);
-                    handleCloseDetailModal();
-                  }}
-                  className="flex-1 items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                  onPress={handleCloseDetailModal}
+                  className="flex-1 items-center justify-center rounded-xl bg-gold py-4"
                   activeOpacity={0.7}
                 >
-                  <Text className="text-base font-semibold text-gold">Set as Active</Text>
+                  <Text className="text-base font-semibold text-background">Close</Text>
                 </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={handleCloseDetailModal}
-                className="flex-1 items-center justify-center rounded-xl bg-gold py-4"
-                activeOpacity={0.7}
-              >
-                <Text className="text-base font-semibold text-background">Close</Text>
-              </TouchableOpacity>
-            </View>
+              </View>
+            ) : (
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsEditMode(false);
+                    setShowContextMenu(false);
+                  }}
+                  className="flex-1 items-center justify-center rounded-xl border-2 border-border bg-transparent py-4"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-base font-semibold text-foreground">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedVehicle && editFormData.make.trim() && editFormData.model.trim()) {
+                      updateVehicleMutation.mutate({
+                        id: selectedVehicle.id,
+                        data: {
+                          make: editFormData.make,
+                          model: editFormData.model,
+                          year: editFormData.year ? parseInt(editFormData.year, 10) : undefined,
+                          trim: editFormData.trim || undefined,
+                          licensePlate: editFormData.licensePlate || undefined,
+                          odometer: editFormData.odometer
+                            ? parseInt(editFormData.odometer, 10)
+                            : undefined,
+                          vin: editFormData.vin || undefined,
+                          fuelType: editFormData.fuelType,
+                        },
+                      });
+                    } else {
+                      showInlineToast('error', 'Make and Model are required');
+                    }
+                  }}
+                  disabled={updateVehicleMutation.isPending}
+                  className="flex-1 items-center justify-center rounded-xl bg-gold py-4"
+                  activeOpacity={0.7}
+                >
+                  {updateVehicleMutation.isPending ? (
+                    <ActivityIndicator color="#000" />
+                  ) : (
+                    <Text className="text-base font-semibold text-background">Save Changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
