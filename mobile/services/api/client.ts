@@ -72,12 +72,21 @@ apiClient.interceptors.response.use(
         // Refresh failed, clear tokens and redirect to login
         await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
         await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
-        await SecureStore.deleteItemAsync(STORAGE_KEYS.USER_DATA);
 
         // Show error toast
         useToastStore.getState().setToast({
           type: 'error',
           message: 'Session expired. Please login again.',
+        });
+
+        // Import auth store dynamically to avoid circular dependency
+        const { useAuthStore } = await import('@/stores/auth.store');
+
+        // Clear auth state and redirect to login
+        useAuthStore.setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false
         });
 
         return Promise.reject(refreshError);

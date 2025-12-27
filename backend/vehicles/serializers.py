@@ -16,8 +16,9 @@ class VehicleSerializer(serializers.ModelSerializer):
         source="fuel_type", allow_blank=True, allow_null=True, required=False
     )
     photoUrl = serializers.CharField(
-        source="photo_url", allow_blank=True, allow_null=True, required=False
+        source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
     )
+    image = serializers.ImageField(write_only=True, required=False, allow_null=True)
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -36,6 +37,7 @@ class VehicleSerializer(serializers.ModelSerializer):
             "dongleConnectionType",
             "fuelType",
             "photoUrl",
+            "image",
             "createdAt",
         ]
         read_only_fields = [
@@ -44,7 +46,50 @@ class VehicleSerializer(serializers.ModelSerializer):
             "createdAt",
             "dongleId",
             "dongleConnectionType",
+            "photoUrl",
         ]
+
+    def create(self, validated_data):
+        image = validated_data.pop('image', None)
+        vehicle = super().create(validated_data)
+
+        if image:
+            # Upload image to S3 and save URL
+            from files.s3_utils import upload_file_to_s3
+
+            # Generate a unique filename
+            import uuid
+            from pathlib import Path
+            extension = Path(image.name).suffix
+            filename = f"vehicles/{vehicle.id}{extension}"
+
+            # Upload to S3
+            s3_url = upload_file_to_s3(image, filename)
+            vehicle.photo_url = s3_url
+            vehicle.save()
+
+        return vehicle
+
+    def update(self, instance, validated_data):
+        image = validated_data.pop('image', None)
+        vehicle = super().update(instance, validated_data)
+
+        if image:
+            # Upload image to S3 and save URL
+            from files.s3_utils import upload_file_to_s3
+
+            # Generate a unique filename
+            import uuid
+            from pathlib import Path
+            extension = Path(image.name).suffix
+            filename = f"vehicles/{vehicle.id}{extension}"
+
+            # Upload to S3
+            s3_url = upload_file_to_s3(image, filename)
+            vehicle.photo_url = s3_url
+            vehicle.save()
+
+        return vehicle
 
 
 class TelemetryBatchSerializer(serializers.Serializer):
