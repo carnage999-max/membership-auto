@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <View
       className={cn(
-        'rounded-lg bg-surface p-4',
+        'rounded-xl bg-surface p-5',
         variant === 'elevated' && 'shadow-lg shadow-black/50',
         className
       )}

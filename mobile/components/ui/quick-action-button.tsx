@@ -19,13 +19,13 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className={cn('flex-1 items-center', className)}
+      className={cn('items-center py-2', className)}
       activeOpacity={0.7}
     >
-      <View className="mb-2 h-16 w-16 items-center justify-center rounded-2xl bg-gold/10">
-        <Icon size={28} color="#cba86e" />
+      <View className="mb-3 h-20 w-20 items-center justify-center rounded-2xl bg-zinc-800 border border-zinc-700">
+        <Icon size={32} color="#cba86e" />
       </View>
-      <Text className="text-center text-xs font-medium text-textSecondary" numberOfLines={2}>
+      <Text className="text-center text-xs font-medium text-textSecondary leading-tight px-1" numberOfLines={2}>
         {title}
       </Text>
     </TouchableOpacity>

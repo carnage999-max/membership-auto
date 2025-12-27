@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { serviceService } from '@/services/api/service.service';
 import { vehicleService } from '@/services/api/vehicle.service';
 import { useQuery } from '@tanstack/react-query';
@@ -155,14 +154,18 @@ const ServiceScheduleScreen = () => {
       )}
 
       {/* Book Button */}
-      <Button
-        variant={schedule.priority === 'high' ? 'primary' : 'outline'}
-        size="sm"
+      <TouchableOpacity
         onPress={() => handleBookService(schedule)}
-        rightIcon={<ChevronRight size={18} color={schedule.priority === 'high' ? '#ffffff' : '#cba86e'} />}
+        className={`flex-row items-center justify-center rounded-xl py-3 ${
+          schedule.priority === 'high' ? 'bg-gold' : 'border-2 border-gold bg-transparent'
+        }`}
+        activeOpacity={0.7}
       >
-        Book This Service
-      </Button>
+        <Text className={`text-sm font-semibold ${schedule.priority === 'high' ? 'text-background' : 'text-gold'}`}>
+          Book This Service
+        </Text>
+        <ChevronRight size={18} color={schedule.priority === 'high' ? '#0d0d0d' : '#cba86e'} />
+      </TouchableOpacity>
     </Card>
   );
 

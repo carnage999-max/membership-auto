@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { QuickActionButton } from '@/components/ui/quick-action-button';
+import { Skeleton, SkeletonCard, SkeletonQuickAction } from '@/components/ui/skeleton';
 import { QUICK_ACTIONS } from '@/constants';
 import { offerService } from '@/services/api/offer.service';
 import { vehicleService } from '@/services/api/vehicle.service';
@@ -20,7 +21,7 @@ import {
   Tag,
   Users,
 } from 'lucide-react-native';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Map icon names to components
@@ -81,39 +82,66 @@ const DashboardScreen = () => {
     router.push(action.route as any);
   };
 
+  // Show loading state on initial load
+  if (vehiclesLoading && !vehiclesData) {
+    return (
+      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+        <View className="px-5 pt-6">
+          <View className="mb-8">
+            <Skeleton height={36} className="mb-2 w-3/4" />
+            <Skeleton height={20} className="w-1/2" />
+          </View>
+          <SkeletonCard className="mb-6" />
+          <SkeletonCard className="mb-6" />
+          <View className="mb-6">
+            <Skeleton height={24} className="mb-5 w-1/3" />
+            <View className="flex-row flex-wrap">
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <View key={i} className="w-1/4 p-2">
+                  <SkeletonQuickAction />
+                </View>
+              ))}
+            </View>
+          </View>
+          <SkeletonCard />
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       className="flex-1 bg-background"
-      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#cba86e" />
       }
     >
-      <View className="px-4 pt-4">
+      <View className="px-5 pt-6">
         {/* Welcome Header */}
-        <View className="mb-6">
-          <Text className="text-2xl font-bold text-foreground">
+        <View className="mb-8">
+          <Text className="text-3xl font-bold text-foreground">
             Welcome back, {user?.name?.split(' ')[0] || 'Member'}!
           </Text>
-          <Text className="mt-1 text-sm text-textSecondary">Your automotive care dashboard</Text>
+          <Text className="mt-2 text-base text-textSecondary">Your automotive care dashboard</Text>
         </View>
 
         {/* Membership Status Card */}
-        <Card className="mb-4" variant="elevated">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-foreground">Membership Status</Text>
-            <View className="rounded-full bg-success/20 px-3 py-1">
+        <Card className="mb-6" variant="elevated">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-xl font-semibold text-foreground">Membership Status</Text>
+            <View className="rounded-full bg-success/20 px-4 py-1.5">
               <Text className="text-xs font-semibold text-success">Active</Text>
             </View>
           </View>
-          <View className="space-y-2">
+          <View className="gap-3">
             <View className="flex-row items-center">
-              <CheckCircle2 size={16} color="#4caf50" />
-              <Text className="ml-2 text-sm text-textSecondary">Premium Plan • Renews Monthly</Text>
+              <CheckCircle2 size={18} color="#4caf50" />
+              <Text className="ml-3 text-sm text-textSecondary">Premium Plan • Renews Monthly</Text>
             </View>
             <View className="flex-row items-center">
-              <Calendar size={16} color="#cba86e" />
-              <Text className="ml-2 text-sm text-textSecondary">
+              <Calendar size={18} color="#cba86e" />
+              <Text className="ml-3 text-sm text-textSecondary">
                 Next renewal: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
               </Text>
             </View>
@@ -122,22 +150,22 @@ const DashboardScreen = () => {
 
         {/* Active Vehicle Card */}
         {activeVehicle && (
-          <Card className="mb-4" variant="elevated">
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-foreground">Active Vehicle</Text>
-              <View className="rounded-full bg-gold/20 px-3 py-1">
+          <Card className="mb-6" variant="elevated">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-xl font-semibold text-foreground">Active Vehicle</Text>
+              <View className="rounded-full bg-gold/20 px-4 py-1.5">
                 <Text className="text-xs font-semibold text-gold">
                   {activeVehicle.odometer?.toLocaleString() || '0'} mi
                 </Text>
               </View>
             </View>
-            <View className="space-y-2">
+            <View className="gap-3">
               <Text className="text-base font-medium text-foreground">
                 {activeVehicle.year} {activeVehicle.make} {activeVehicle.model}
               </Text>
               <View className="flex-row items-center">
-                <Gauge size={16} color="#cba86e" />
-                <Text className="ml-2 text-sm text-textSecondary">Health: Good • No alerts</Text>
+                <Gauge size={18} color="#cba86e" />
+                <Text className="ml-3 text-sm text-textSecondary">Health: Good • No alerts</Text>
               </View>
             </View>
           </Card>
@@ -145,11 +173,11 @@ const DashboardScreen = () => {
 
         {/* No Vehicles Message */}
         {vehicles.length === 0 && !vehiclesLoading && (
-          <Card className="mb-4" variant="elevated">
-            <View className="items-center py-4">
-              <Car size={40} color="#707070" />
-              <Text className="mt-3 text-base font-medium text-foreground">No Vehicles Added</Text>
-              <Text className="mt-1 text-center text-sm text-textSecondary">
+          <Card className="mb-6" variant="elevated">
+            <View className="items-center py-6">
+              <Car size={48} color="#707070" />
+              <Text className="mt-4 text-base font-medium text-foreground">No Vehicles Added</Text>
+              <Text className="mt-2 text-center text-sm text-textSecondary px-4">
                 Add your first vehicle to get started with maintenance tracking
               </Text>
             </View>
@@ -158,22 +186,22 @@ const DashboardScreen = () => {
 
         {/* Special Offers Banner */}
         {offers && offers.length > 0 && (
-          <Card className="mb-4 border-2 border-gold/30 bg-gold/10" variant="elevated">
+          <Card className="mb-6 border-2 border-gold/30 bg-gold/10" variant="elevated">
             <View className="flex-row items-start">
-              <Tag size={20} color="#cba86e" className="mt-1" />
+              <Tag size={22} color="#cba86e" className="mt-1" />
               <View className="ml-3 flex-1">
                 <Text className="text-base font-semibold text-gold">
                   {offers.length} Special Offer{offers.length > 1 ? 's' : ''} Available!
                 </Text>
-                <Text className="mt-1 text-sm text-textSecondary">{offers[0].title}</Text>
+                <Text className="mt-2 text-sm text-textSecondary">{offers[0].title}</Text>
               </View>
             </View>
           </Card>
         )}
 
         {/* Quick Actions */}
-        <View className="mb-4">
-          <Text className="mb-4 text-lg font-semibold text-foreground">Quick Actions</Text>
+        <View className="mb-6">
+          <Text className="mb-5 text-xl font-semibold text-foreground">Quick Actions</Text>
           <View className="flex-row flex-wrap">
             {QUICK_ACTIONS.map((action) => {
               const Icon = iconMap[action.icon];
@@ -190,24 +218,24 @@ const DashboardScreen = () => {
           </View>
         </View>
 
-        {/* Next Service Card (Placeholder) */}
-        <Card className="mb-4">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-foreground">Next Service</Text>
-            <AlertCircle size={20} color="#cba86e" />
+        {/* Next Service Card */}
+        <Card className="mb-6">
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="text-xl font-semibold text-foreground">Next Service</Text>
+            <AlertCircle size={22} color="#cba86e" />
           </View>
           <View>
-            <Text className="mb-2 text-base font-medium text-foreground">
+            <Text className="mb-3 text-base font-medium text-foreground">
               Routine Maintenance
             </Text>
-            <View className="flex-row items-center">
-              <Calendar size={16} color="#707070" />
-              <Text className="ml-2 text-sm text-textSecondary">
+            <View className="flex-row items-center mb-4">
+              <Calendar size={18} color="#707070" />
+              <Text className="ml-3 text-sm text-textSecondary">
                 Recommended at 5,000 miles or 3 months
               </Text>
             </View>
-            <View className="mt-3 rounded-lg bg-gold/10 p-3">
-              <Text className="text-xs font-medium text-gold">
+            <View className="rounded-lg bg-gold/10 p-4">
+              <Text className="text-sm font-medium text-gold">
                 Includes: Oil change, tire rotation, brake inspection
               </Text>
             </View>

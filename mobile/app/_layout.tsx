@@ -1,4 +1,5 @@
 import { ErrorBoundary } from '@components/error-boundary';
+import Toaster from '@components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useCustomFonts from '@utils/hooks/use-custom-fonts';
 import '@utils/i18n/config';
@@ -38,6 +39,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ApiProvider>
           <Slot />
+          <Toaster />
         </ApiProvider>
       </QueryClientProvider>
     </ErrorBoundary>

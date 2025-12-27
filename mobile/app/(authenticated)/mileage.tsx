@@ -266,13 +266,14 @@ const MileageScreen = () => {
               <Text className="text-2xl font-bold text-foreground">Mileage Tracker</Text>
               <Text className="text-sm text-textSecondary">Track fuel economy and expenses</Text>
             </View>
-            <Button
+            <TouchableOpacity
               onPress={() => setShowAddModal(true)}
-              size="sm"
-              leftIcon={<Plus size={18} color="#ffffff" />}
+              className="flex-row items-center justify-center rounded-xl bg-gold px-4 py-3"
+              activeOpacity={0.7}
             >
-              Add Fill-Up
-            </Button>
+              <Plus size={18} color="#0d0d0d" />
+              <Text className="ml-1 text-sm font-semibold text-background">Add Fill-Up</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Vehicle Selector */}
@@ -429,13 +430,18 @@ const MileageScreen = () => {
                 </View>
 
                 {/* Submit Button */}
-                <Button
+                <TouchableOpacity
                   onPress={handleAddFillUp}
                   disabled={addFuelLogMutation.isPending}
-                  className="mt-4"
+                  className="mt-4 flex-row items-center justify-center rounded-xl bg-gold py-4"
+                  activeOpacity={0.7}
                 >
-                  {addFuelLogMutation.isPending ? 'Adding...' : 'Add Fill-Up'}
-                </Button>
+                  {addFuelLogMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#0d0d0d" />
+                  ) : (
+                    <Text className="text-base font-semibold text-background">Add Fill-Up</Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </View>

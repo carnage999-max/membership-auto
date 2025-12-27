@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
 import { authService } from '@/services/api/auth.service';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +12,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { z } from 'zod';
 
@@ -171,14 +171,18 @@ export default function ForgotPasswordScreen() {
               )}
             />
 
-            <Button
+            <TouchableOpacity
               onPress={handleRequestSubmit(onRequestReset)}
-              isLoading={isLoading}
-              className="mt-2"
-              size="lg"
+              disabled={isLoading}
+              className="mt-2 flex-row items-center justify-center rounded-xl bg-gold py-4"
+              activeOpacity={0.7}
             >
-              Send Reset Code
-            </Button>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#0d0d0d" />
+              ) : (
+                <Text className="text-base font-semibold text-background">Send Reset Code</Text>
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
@@ -238,14 +242,18 @@ export default function ForgotPasswordScreen() {
               )}
             />
 
-            <Button
+            <TouchableOpacity
               onPress={handleResetSubmit(onResetPassword)}
-              isLoading={isLoading}
-              className="mt-2"
-              size="lg"
+              disabled={isLoading}
+              className="mt-2 flex-row items-center justify-center rounded-xl bg-gold py-4"
+              activeOpacity={0.7}
             >
-              Reset Password
-            </Button>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#0d0d0d" />
+              ) : (
+                <Text className="text-base font-semibold text-background">Reset Password</Text>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => {

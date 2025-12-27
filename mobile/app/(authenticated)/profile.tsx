@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth.store';
 import { userService, type SavingsData } from '@/services/api/user.service';
@@ -27,10 +26,12 @@ const ProfileScreen = () => {
   const queryClient = useQueryClient();
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
 
-  // Fetch savings data
+  // Fetch savings data with error handling (suppresses error toast)
   const { data: savings, isLoading: savingsLoading } = useQuery({
     queryKey: ['savings'],
     queryFn: userService.getSavings,
+    retry: false,
+    throwOnError: false,
   });
 
   // Toggle auto-renew mutation
@@ -92,7 +93,7 @@ const ProfileScreen = () => {
         {
           text: 'Cancel Membership',
           style: 'destructive',
-          onPress: () => cancelMembershipMutation.mutate(),
+          onPress: () => cancelMembershipMutation.mutate(undefined),
         },
       ]
     );
@@ -106,7 +107,7 @@ const ProfileScreen = () => {
         { text: 'Not Now', style: 'cancel' },
         {
           text: 'Reactivate',
-          onPress: () => reactivateMembershipMutation.mutate(),
+          onPress: () => reactivateMembershipMutation.mutate(undefined),
         },
       ]
     );
@@ -236,24 +237,38 @@ const ProfileScreen = () => {
             </View>
 
             {/* Membership Actions */}
-            <View className="mt-4 space-y-2">
-              <Button
-                variant="outline"
+            <View className="mt-4 gap-3">
+              <TouchableOpacity
                 onPress={handleReactivateMembership}
                 disabled={reactivateMembershipMutation.isPending}
-                leftIcon={<RefreshCw size={18} color="#cba86e" />}
+                className="flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                activeOpacity={0.7}
               >
-                {reactivateMembershipMutation.isPending ? 'Reactivating...' : 'Reactivate Membership'}
-              </Button>
+                {reactivateMembershipMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#cba86e" />
+                ) : (
+                  <>
+                    <RefreshCw size={18} color="#cba86e" />
+                    <Text className="ml-2 text-base font-semibold text-gold">Reactivate Membership</Text>
+                  </>
+                )}
+              </TouchableOpacity>
 
-              <Button
-                variant="danger"
+              <TouchableOpacity
                 onPress={handleCancelMembership}
                 disabled={cancelMembershipMutation.isPending}
-                leftIcon={<XCircle size={18} color="#ffffff" />}
+                className="flex-row items-center justify-center rounded-xl bg-error py-4"
+                activeOpacity={0.7}
               >
-                {cancelMembershipMutation.isPending ? 'Cancelling...' : 'Cancel Membership'}
-              </Button>
+                {cancelMembershipMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <XCircle size={18} color="#ffffff" />
+                    <Text className="ml-2 text-base font-semibold text-white">Cancel Membership</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </Card>
 
@@ -265,21 +280,21 @@ const ProfileScreen = () => {
               icon={User}
               title="Edit Profile"
               subtitle="Update your personal information"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'Edit Profile feature coming soon')}
             />
 
             <ProfileMenuItem
               icon={Shield}
               title="Change Password"
               subtitle="Update your security credentials"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'Change Password feature coming soon')}
             />
 
             <ProfileMenuItem
               icon={CreditCard}
               title="Payment Methods"
               subtitle="Manage your billing information"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'Payment Methods feature coming soon')}
             />
           </Card>
 
@@ -291,33 +306,33 @@ const ProfileScreen = () => {
               icon={Bell}
               title="Notifications"
               subtitle="Manage notification preferences"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'Notification settings feature coming soon')}
             />
 
             <ProfileMenuItem
               icon={Globe}
               title="Language"
               subtitle="English (US)"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'Language settings feature coming soon')}
             />
 
             <ProfileMenuItem
               icon={Settings}
               title="Preferences"
               subtitle="App settings and preferences"
-              onPress={() => {}}
+              onPress={() => showToast('info', 'App preferences feature coming soon')}
             />
           </Card>
 
           {/* Logout Button */}
-          <Button
-            variant="danger"
+          <TouchableOpacity
             onPress={handleLogout}
-            className="mb-4"
-            leftIcon={<LogOut size={20} color="#ffffff" />}
+            className="mb-4 flex-row items-center justify-center rounded-xl bg-error py-4"
+            activeOpacity={0.7}
           >
-            Log Out
-          </Button>
+            <LogOut size={20} color="#ffffff" />
+            <Text className="ml-2 text-base font-semibold text-white">Log Out</Text>
+          </TouchableOpacity>
 
           {/* App Version */}
           <Text className="text-center text-xs text-textMuted">
