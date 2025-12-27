@@ -34,6 +34,24 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Track if we're currently refreshing token to prevent race conditions
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Response interceptor to handle token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
@@ -42,7 +60,22 @@ apiClient.interceptors.response.use(
 
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request to retry after refresh completes
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+          }
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const refreshToken = await SecureStore.getItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
@@ -51,24 +84,34 @@ apiClient.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        // Call refresh token endpoint (aligned with Django backend)
+        // Call refresh token endpoint
         const response = await axios.post(`${API_BASE_URL}/users/refresh/`, {
           refresh: refreshToken,
         });
 
-        const { access: accessToken, refresh: newRefreshToken } = response.data;
+        // Handle both 'access' and 'accessToken' field names
+        const newAccessToken = response.data.access || response.data.accessToken;
 
-        // Save new tokens
-        await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-        await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken);
+        if (!newAccessToken) {
+          throw new Error('No access token in response');
+        }
+
+        // Save new access token
+        await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken);
+
+        isRefreshing = false;
+        processQueue(null, newAccessToken);
 
         // Retry original request with new token
         if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
 
         return apiClient(originalRequest);
       } catch (refreshError) {
+        isRefreshing = false;
+        processQueue(refreshError, null);
+
         // Refresh failed, clear tokens and redirect to login
         await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
         await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
