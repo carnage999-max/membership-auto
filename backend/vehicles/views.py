@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 from datetime import datetime
 from .models import Vehicle, TelematicsSnapshot, FuelLog
@@ -15,6 +16,7 @@ from .serializers import (
 
 class VehicleListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request):
         """List user's vehicles"""
@@ -24,6 +26,9 @@ class VehicleListCreateView(APIView):
 
     def post(self, request):
         """Add a new vehicle and auto-create service schedules"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             serializer = VehicleSerializer(data=request.data)
             if serializer.is_valid():
@@ -35,11 +40,10 @@ class VehicleListCreateView(APIView):
                 create_default_service_schedules(vehicle)
 
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+            logger.warning(f"Vehicle serializer validation failed: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"Error creating vehicle: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error creating vehicle: {str(e)}", exc_info=True)
             return Response(
                 {"error": f"Failed to create vehicle: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -48,6 +52,7 @@ class VehicleListCreateView(APIView):
 
 class VehicleDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get(self, request, id):
         """Get a specific vehicle"""
