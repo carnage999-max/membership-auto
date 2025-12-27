@@ -18,7 +18,7 @@ class VehicleSerializer(serializers.ModelSerializer):
     photoUrl = serializers.CharField(
         source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
     )
-    image = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    image = serializers.ImageField(write_only=True, required=False, allow_null=True, allow_empty_file=True)
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -54,19 +54,26 @@ class VehicleSerializer(serializers.ModelSerializer):
         vehicle = super().create(validated_data)
 
         if image:
-            # Upload image to S3 and save URL
-            from files.s3_utils import upload_file_to_s3
+            try:
+                # Upload image to S3 and save URL
+                from files.s3_utils import upload_file_to_s3
 
-            # Generate a unique filename
-            import uuid
-            from pathlib import Path
-            extension = Path(image.name).suffix
-            filename = f"vehicles/{vehicle.id}{extension}"
+                # Generate a unique filename
+                from pathlib import Path
+                extension = Path(image.name).suffix
+                filename = f"vehicles/{vehicle.id}{extension}"
 
-            # Upload to S3
-            s3_url = upload_file_to_s3(image, filename)
-            vehicle.photo_url = s3_url
-            vehicle.save()
+                # Upload to S3
+                s3_url = upload_file_to_s3(image, filename)
+                if s3_url:
+                    vehicle.photo_url = s3_url
+                    vehicle.save()
+            except Exception as e:
+                # Log the error but don't fail vehicle creation
+                print(f"Failed to upload vehicle image: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Vehicle was created, just without the image
 
         return vehicle
 
@@ -75,19 +82,26 @@ class VehicleSerializer(serializers.ModelSerializer):
         vehicle = super().update(instance, validated_data)
 
         if image:
-            # Upload image to S3 and save URL
-            from files.s3_utils import upload_file_to_s3
+            try:
+                # Upload image to S3 and save URL
+                from files.s3_utils import upload_file_to_s3
 
-            # Generate a unique filename
-            import uuid
-            from pathlib import Path
-            extension = Path(image.name).suffix
-            filename = f"vehicles/{vehicle.id}{extension}"
+                # Generate a unique filename
+                from pathlib import Path
+                extension = Path(image.name).suffix
+                filename = f"vehicles/{vehicle.id}{extension}"
 
-            # Upload to S3
-            s3_url = upload_file_to_s3(image, filename)
-            vehicle.photo_url = s3_url
-            vehicle.save()
+                # Upload to S3
+                s3_url = upload_file_to_s3(image, filename)
+                if s3_url:
+                    vehicle.photo_url = s3_url
+                    vehicle.save()
+            except Exception as e:
+                # Log the error but don't fail vehicle update
+                print(f"Failed to upload vehicle image: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Vehicle was updated, just without the image
 
         return vehicle
 
