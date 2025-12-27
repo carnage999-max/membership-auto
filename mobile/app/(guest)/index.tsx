@@ -1,5 +1,4 @@
 import { TextInput } from '@/components/ui/text-input';
-import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
@@ -13,8 +12,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { z } from 'zod';
+
+const logo = require('@assets/logo.png');
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -56,8 +59,13 @@ export default function LoginScreen() {
         contentContainerClassName="flex-grow justify-center px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        <View className="mb-12 items-center">
-          <Text className="mb-2 text-4xl font-bold text-gold">Membership Auto</Text>
+        <View className="mb-10 items-center">
+          <Image
+            source={logo}
+            className="h-24 w-24 mb-4"
+            resizeMode="contain"
+          />
+          <Text className="mb-2 text-3xl font-bold text-gold">Membership Auto</Text>
           <Text className="text-base text-textSecondary">
             Your premium automotive membership
           </Text>
@@ -125,14 +133,18 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <Button
+        <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
-          isLoading={isLoading}
-          className="mb-4"
-          size="lg"
+          disabled={isLoading}
+          className="mb-4 flex-row items-center justify-center rounded-xl bg-gold py-4"
+          activeOpacity={0.7}
         >
-          Log In
-        </Button>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#0d0d0d" />
+          ) : (
+            <Text className="text-base font-semibold text-background">Log In</Text>
+          )}
+        </TouchableOpacity>
 
         <View className="flex-row items-center justify-center">
           <Text className="text-sm text-textSecondary">Don't have an account? </Text>

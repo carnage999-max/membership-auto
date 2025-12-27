@@ -52,7 +52,9 @@ export const userService = {
    * Get total savings
    */
   getSavings: async () => {
-    const response = await api.get<SavingsData>('/users/savings/');
+    const response = await api.get<SavingsData>('/users/savings/', {
+      suppressErrorToast: true,
+    });
     return response.data;
   },
 

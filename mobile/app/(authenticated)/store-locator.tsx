@@ -155,37 +155,34 @@ const StoreLocatorScreen = () => {
       )}
 
       {/* Action Buttons */}
-      <View className="flex-row space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
+      <View className="flex-row gap-2">
+        <TouchableOpacity
           onPress={() => openInMaps(location)}
-          leftIcon={<Navigation size={16} color="#cba86e" />}
+          className="flex-1 flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-3"
+          activeOpacity={0.7}
         >
-          Directions
-        </Button>
+          <Navigation size={16} color="#cba86e" />
+          <Text className="ml-1 text-sm font-semibold text-gold">Directions</Text>
+        </TouchableOpacity>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
+        <TouchableOpacity
           onPress={() => callLocation(location.phone)}
-          leftIcon={<Phone size={16} color="#cba86e" />}
+          className="flex-1 flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-3"
+          activeOpacity={0.7}
         >
-          Call
-        </Button>
+          <Phone size={16} color="#cba86e" />
+          <Text className="ml-1 text-sm font-semibold text-gold">Call</Text>
+        </TouchableOpacity>
       </View>
 
-      <Button
-        variant="primary"
-        size="sm"
-        className="mt-2"
+      <TouchableOpacity
         onPress={() => handleBookAppointment(location)}
-        leftIcon={<Calendar size={16} color="#ffffff" />}
+        className="mt-2 flex-row items-center justify-center rounded-xl bg-gold py-3"
+        activeOpacity={0.7}
       >
-        Book Appointment
-      </Button>
+        <Calendar size={16} color="#0d0d0d" />
+        <Text className="ml-2 text-sm font-semibold text-background">Book Appointment</Text>
+      </TouchableOpacity>
     </Card>
   );
 

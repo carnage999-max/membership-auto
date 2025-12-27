@@ -1,12 +1,40 @@
-import { Tabs } from 'expo-router';
-import { Car, Home, Calendar, Tag, User } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { Tabs, useRouter } from 'expo-router';
+import { Car, Home, Calendar, Tag, User, ChevronLeft } from 'lucide-react-native';
+import { Platform, Image, TouchableOpacity, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+
+const logo = require('@assets/logo.png');
+
+// Custom header with logo and title side by side
+const HeaderWithLogo = ({ title }: { title: string }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
+    <Image source={logo} style={{ width: 28, height: 28 }} resizeMode="contain" />
+    <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700', marginLeft: 12 }}>
+      {title}
+    </Text>
+  </View>
+);
+
+// Custom header with back button and title side by side
+const HeaderWithBack = ({ title, onPress }: { title: string; onPress: () => void }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ padding: 4 }}>
+      <ChevronLeft size={28} color="#cba86e" />
+    </TouchableOpacity>
+    <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700', marginLeft: 8 }}>
+      {title}
+    </Text>
+  </View>
+);
 
 // Only for authenticated users
 const AuthenticatedLayout = () => {
   // Setup push notifications
   usePushNotifications();
+  const router = useRouter();
+
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -17,13 +45,14 @@ const AuthenticatedLayout = () => {
           backgroundColor: '#1a1a1a',
           borderTopColor: '#2a2a2a',
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          paddingTop: 10,
+          height: (Platform.OS === 'ios' ? 65 : 60) + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
+          marginBottom: 4,
         },
         headerStyle: {
           backgroundColor: '#0d0d0d',
@@ -37,6 +66,8 @@ const AuthenticatedLayout = () => {
           fontWeight: '700',
           fontSize: 18,
         },
+        // Hide default title since we're using custom headerLeft
+        headerTitle: '',
       }}
     >
       <Tabs.Screen
@@ -44,6 +75,7 @@ const AuthenticatedLayout = () => {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+          headerLeft: () => <HeaderWithLogo title="Home" />,
         }}
       />
       <Tabs.Screen
@@ -51,15 +83,15 @@ const AuthenticatedLayout = () => {
         options={{
           title: 'Vehicles',
           tabBarIcon: ({ color, size }) => <Car color={color} size={size} />,
-          headerTitle: 'My Vehicles',
+          headerLeft: () => <HeaderWithLogo title="My Vehicles" />,
         }}
       />
       <Tabs.Screen
         name="appointments"
         options={{
-          title: 'Appointments',
+          title: 'Appts',
           tabBarIcon: ({ color, size }) => <Calendar color={color} size={size} />,
-          headerTitle: 'Appointments',
+          headerLeft: () => <HeaderWithLogo title="Appointments" />,
         }}
       />
       <Tabs.Screen
@@ -67,7 +99,7 @@ const AuthenticatedLayout = () => {
         options={{
           title: 'Offers',
           tabBarIcon: ({ color, size }) => <Tag color={color} size={size} />,
-          headerTitle: 'Special Offers',
+          headerLeft: () => <HeaderWithLogo title="Special Offers" />,
         }}
       />
       <Tabs.Screen
@@ -75,65 +107,81 @@ const AuthenticatedLayout = () => {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
-          headerTitle: 'My Account',
+          headerLeft: () => <HeaderWithLogo title="My Account" />,
         }}
       />
 
-      {/* Hide additional screens from tab bar */}
+      {/* Hide additional screens from tab bar - with back navigation */}
       <Tabs.Screen
         name="mileage"
         options={{
           href: null,
-          headerTitle: 'Mileage Tracker',
+          headerLeft: () => (
+            <HeaderWithBack title="Mileage Tracker" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="store-locator"
         options={{
           href: null,
-          headerTitle: 'Store Locator',
+          headerLeft: () => (
+            <HeaderWithBack title="Store Locator" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="parking"
         options={{
           href: null,
-          headerTitle: 'Parking Reminder',
+          headerLeft: () => (
+            <HeaderWithBack title="Parking Reminder" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="referrals"
         options={{
           href: null,
-          headerTitle: 'Refer a Friend',
+          headerLeft: () => (
+            <HeaderWithBack title="Refer a Friend" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
           href: null,
-          headerTitle: 'Support Chat',
+          headerLeft: () => (
+            <HeaderWithBack title="Support Chat" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="help"
         options={{
           href: null,
-          headerTitle: 'Help & Support',
+          headerLeft: () => (
+            <HeaderWithBack title="Help & Support" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
         name="service-schedule"
         options={{
           href: null,
-          headerTitle: 'Service Schedule',
+          headerLeft: () => (
+            <HeaderWithBack title="Service Schedule" onPress={() => router.back()} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="book-appointment"
+        name="book-appointment/index"
         options={{
           href: null,
-          headerTitle: 'Book Appointment',
+          headerLeft: () => (
+            <HeaderWithBack title="Book Appointment" onPress={() => router.back()} />
+          ),
         }}
       />
     </Tabs>

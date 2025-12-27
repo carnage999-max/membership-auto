@@ -6,8 +6,8 @@ import { showToast } from '@/utils/toast';
 
 export function usePushNotifications() {
   const router = useRouter();
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
   useEffect(() => {
     // Register for push notifications
@@ -23,7 +23,7 @@ export function usePushNotifications() {
         // Show toast for foreground notifications
         const { title, body } = notification.request.content;
         if (title) {
-          showToast('info', title, body);
+          showToast('info', body ? `${title}: ${body}` : title);
         }
       }
     );
@@ -39,7 +39,7 @@ export function usePushNotifications() {
         if (data?.deepLink) {
           router.push(data.deepLink as any);
         } else if (data?.type) {
-          handleNotificationType(data.type, data);
+          handleNotificationType(String(data.type), data);
         }
       }
     );

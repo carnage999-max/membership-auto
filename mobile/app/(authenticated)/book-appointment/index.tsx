@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { vehicleService } from '@/services/api/vehicle.service';
 import { appointmentService } from '@/services/api/appointment.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/utils/toast';
+import InlineToast from '@/components/ui/inline-toast';
 import {
   Car,
   MapPin,
@@ -13,6 +13,11 @@ import {
   CheckCircle,
   ChevronRight,
   ChevronLeft,
+  Plus,
+  Camera,
+  Upload,
+  Trash2,
+  X,
 } from 'lucide-react-native';
 import {
   ScrollView,
@@ -21,10 +26,33 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Modal,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import type { Vehicle, ServiceLocation, TimeSlot } from '@/types';
+
+interface VehicleFormData {
+  vin: string;
+  year: string;
+  make: string;
+  model: string;
+  trim: string;
+  licensePlate: string;
+  odometer: string;
+  fuelType: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
+}
+
+const FUEL_TYPES = [
+  { value: 'gasoline', label: 'Gasoline' },
+  { value: 'diesel', label: 'Diesel' },
+  { value: 'electric', label: 'Electric' },
+  { value: 'hybrid', label: 'Hybrid' },
+];
 
 type BookingStep = 'vehicle' | 'location' | 'service' | 'datetime' | 'confirm';
 
@@ -40,6 +68,36 @@ const BookAppointmentScreen = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [notes, setNotes] = useState('');
+
+  // Add Vehicle Modal State
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Inline toast state for modal
+  const [inlineToast, setInlineToast] = useState<{
+    visible: boolean;
+    type: 'error' | 'success' | 'info';
+    message: string;
+  }>({ visible: false, type: 'info', message: '' });
+
+  const showInlineToast = useCallback((type: 'error' | 'success' | 'info', message: string) => {
+    setInlineToast({ visible: true, type, message });
+  }, []);
+
+  const hideInlineToast = useCallback(() => {
+    setInlineToast((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  const [vehicleFormData, setVehicleFormData] = useState<VehicleFormData>({
+    vin: '',
+    year: '',
+    make: '',
+    model: '',
+    trim: '',
+    licensePlate: '',
+    odometer: '',
+    fuelType: 'gasoline',
+  });
 
   // Fetch vehicles
   const { data: vehicles, isLoading: vehiclesLoading } = useQuery({
@@ -77,6 +135,113 @@ const BookAppointmentScreen = () => {
       showToast('error', 'Failed to book appointment');
     },
   });
+
+  // Create vehicle mutation
+  const createVehicleMutation = useMutation({
+    mutationFn: vehicleService.createVehicle,
+    onSuccess: (newVehicle) => {
+      showToast('success', 'Vehicle added successfully!');
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      setSelectedVehicle(newVehicle);
+      handleCloseVehicleModal();
+    },
+    onError: (error: any) => {
+      showInlineToast('error', error?.message || 'Failed to add vehicle');
+    },
+  });
+
+  // Vehicle Modal Functions
+  const resetVehicleForm = () => {
+    setVehicleFormData({
+      vin: '',
+      year: '',
+      make: '',
+      model: '',
+      trim: '',
+      licensePlate: '',
+      odometer: '',
+      fuelType: 'gasoline',
+    });
+    setSelectedImage(null);
+  };
+
+  const handleCloseVehicleModal = () => {
+    setShowAddVehicleModal(false);
+    resetVehicleForm();
+  };
+
+  const handleOpenVehicleModal = () => {
+    resetVehicleForm();
+    setShowAddVehicleModal(true);
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showInlineToast('error', 'Permission to access gallery is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showInlineToast('error', 'Permission to access camera is required');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+  };
+
+  const handleSubmitVehicle = () => {
+    if (!vehicleFormData.make.trim()) {
+      showInlineToast('error', 'Please enter the vehicle make');
+      return;
+    }
+    if (!vehicleFormData.model.trim()) {
+      showInlineToast('error', 'Please enter the vehicle model');
+      return;
+    }
+
+    createVehicleMutation.mutate({
+      vin: vehicleFormData.vin.trim() || undefined,
+      year: vehicleFormData.year ? parseInt(vehicleFormData.year, 10) : undefined,
+      make: vehicleFormData.make.trim(),
+      model: vehicleFormData.model.trim(),
+      trim: vehicleFormData.trim.trim() || undefined,
+      licensePlate: vehicleFormData.licensePlate.trim() || undefined,
+      odometer: vehicleFormData.odometer ? parseInt(vehicleFormData.odometer, 10) : undefined,
+      fuelType: vehicleFormData.fuelType,
+      imageUri: selectedImage || undefined,
+    });
+  };
+
+  const updateVehicleField = (field: keyof VehicleFormData, value: string) => {
+    setVehicleFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleNext = () => {
     if (currentStep === 'vehicle' && !selectedVehicle) {
@@ -197,13 +362,23 @@ const BookAppointmentScreen = () => {
 
   const renderVehicleStep = () => (
     <View>
-      <Text className="text-xl font-bold text-foreground mb-4">Select Your Vehicle</Text>
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-xl font-bold text-foreground">Select Your Vehicle</Text>
+        <TouchableOpacity
+          onPress={handleOpenVehicleModal}
+          className="flex-row items-center px-3 py-2 rounded-xl bg-gold"
+          activeOpacity={0.7}
+        >
+          <Plus size={16} color="#0d0d0d" />
+          <Text className="ml-1 text-sm font-semibold text-background">Add</Text>
+        </TouchableOpacity>
+      </View>
       {vehiclesLoading ? (
         <Card className="items-center py-8">
           <ActivityIndicator color="#cba86e" />
         </Card>
       ) : vehicles && vehicles.length > 0 ? (
-        <View className="space-y-3">
+        <View className="gap-3">
           {vehicles.map((vehicle) => (
             <TouchableOpacity
               key={vehicle.id}
@@ -237,7 +412,21 @@ const BookAppointmentScreen = () => {
         </View>
       ) : (
         <Card className="items-center py-12">
-          <Text className="text-sm text-textSecondary">No vehicles found</Text>
+          <Car size={64} color="#707070" />
+          <Text className="mt-4 text-lg font-semibold text-foreground">No Vehicles Yet</Text>
+          <Text className="mt-2 text-center text-sm text-textSecondary">
+            Add a vehicle to book an appointment
+          </Text>
+          <TouchableOpacity
+            onPress={handleOpenVehicleModal}
+            className="mt-6 flex-row items-center justify-center rounded-xl bg-gold px-6 py-4"
+            activeOpacity={0.7}
+          >
+            <Plus size={20} color="#0d0d0d" />
+            <Text className="ml-2 text-base font-semibold text-background">
+              Add Your First Vehicle
+            </Text>
+          </TouchableOpacity>
         </Card>
       )}
     </View>
@@ -477,38 +666,313 @@ const BookAppointmentScreen = () => {
         className="absolute bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-3"
         style={{ paddingBottom: insets.bottom + 12 }}
       >
-        <View className="flex-row space-x-3">
-          <Button
-            variant="outline"
+        <View className="flex-row gap-3">
+          <TouchableOpacity
             onPress={handleBack}
-            className="flex-1"
-            leftIcon={<ChevronLeft size={20} color="#cba86e" />}
+            className="flex-1 flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+            activeOpacity={0.7}
           >
-            Back
-          </Button>
+            <ChevronLeft size={20} color="#cba86e" />
+            <Text className="ml-1 text-base font-semibold text-gold">Back</Text>
+          </TouchableOpacity>
 
           {currentStep === 'confirm' ? (
-            <Button
-              variant="primary"
+            <TouchableOpacity
               onPress={handleConfirmBooking}
-              className="flex-1"
               disabled={bookMutation.isPending}
-              leftIcon={<CheckCircle size={20} color="#ffffff" />}
+              className="flex-1 flex-row items-center justify-center rounded-xl bg-gold py-4"
+              activeOpacity={0.7}
             >
-              {bookMutation.isPending ? 'Booking...' : 'Confirm Booking'}
-            </Button>
+              {bookMutation.isPending ? (
+                <ActivityIndicator size="small" color="#0d0d0d" />
+              ) : (
+                <>
+                  <CheckCircle size={20} color="#0d0d0d" />
+                  <Text className="ml-2 text-base font-semibold text-background">Confirm</Text>
+                </>
+              )}
+            </TouchableOpacity>
           ) : (
-            <Button
-              variant="primary"
+            <TouchableOpacity
               onPress={handleNext}
-              className="flex-1"
-              rightIcon={<ChevronRight size={20} color="#ffffff" />}
+              className="flex-1 flex-row items-center justify-center rounded-xl bg-gold py-4"
+              activeOpacity={0.7}
             >
-              Next
-            </Button>
+              <Text className="mr-1 text-base font-semibold text-background">Next</Text>
+              <ChevronRight size={20} color="#0d0d0d" />
+            </TouchableOpacity>
           )}
         </View>
       </View>
+
+      {/* Add Vehicle Modal */}
+      <Modal
+        visible={showAddVehicleModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseVehicleModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          className="flex-1 bg-background"
+        >
+          {/* Inline Toast for Modal */}
+          <InlineToast
+            type={inlineToast.type}
+            message={inlineToast.message}
+            visible={inlineToast.visible}
+            onHide={hideInlineToast}
+          />
+
+          {/* Modal Header */}
+          <View
+            className="flex-row items-center justify-between px-4 py-4 border-b border-border"
+            style={{ paddingTop: insets.top + 16 }}
+          >
+            <Text className="text-xl font-bold text-foreground">Add New Vehicle</Text>
+            <TouchableOpacity onPress={handleCloseVehicleModal} activeOpacity={0.7}>
+              <X size={24} color="#707070" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            className="flex-1"
+            contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 100 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Image Picker Section */}
+            <View className="mb-6">
+              <Text className="text-sm font-medium text-foreground mb-3">
+                Vehicle Photo (Optional)
+              </Text>
+
+              {selectedImage ? (
+                <View className="relative rounded-xl overflow-hidden bg-surface">
+                  <Image
+                    source={{ uri: selectedImage }}
+                    className="w-full h-48"
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    onPress={removeImage}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-error items-center justify-center"
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={16} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View className="border-2 border-dashed border-border rounded-xl p-6 items-center">
+                  <View className="w-16 h-16 rounded-full bg-gold/10 items-center justify-center mb-4">
+                    <Camera size={32} color="#cba86e" />
+                  </View>
+                  <Text className="text-sm text-foreground mb-1">
+                    Take a photo or upload image
+                  </Text>
+                  <Text className="text-xs text-textMuted mb-4 text-center">
+                    Scan VIN from windshield, registration, or upload vehicle photo
+                  </Text>
+
+                  <View className="flex-row gap-3">
+                    <TouchableOpacity
+                      onPress={takePhoto}
+                      className="flex-row items-center px-4 py-3 rounded-xl bg-gold"
+                      activeOpacity={0.7}
+                    >
+                      <Camera size={18} color="#0d0d0d" />
+                      <Text className="ml-2 text-sm font-semibold text-background">Camera</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={pickImage}
+                      className="flex-row items-center px-4 py-3 rounded-xl border-2 border-gold"
+                      activeOpacity={0.7}
+                    >
+                      <Upload size={18} color="#cba86e" />
+                      <Text className="ml-2 text-sm font-semibold text-gold">Gallery</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {/* Form Fields */}
+            <View className="gap-4">
+              {/* Row 1: VIN and Year */}
+              <View className="flex-row gap-4">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">VIN (Optional)</Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="1HGBH41JXMN109186"
+                      value={vehicleFormData.vin}
+                      onChangeText={(text) => updateVehicleField('vin', text.toUpperCase())}
+                      autoCapitalize="characters"
+                      maxLength={17}
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">Year</Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="2020"
+                      value={vehicleFormData.year}
+                      onChangeText={(text) => updateVehicleField('year', text)}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Row 2: Make and Model */}
+              <View className="flex-row gap-4">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">Make *</Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="Toyota"
+                      value={vehicleFormData.make}
+                      onChangeText={(text) => updateVehicleField('make', text)}
+                      autoCapitalize="words"
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">Model *</Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="Camry"
+                      value={vehicleFormData.model}
+                      onChangeText={(text) => updateVehicleField('model', text)}
+                      autoCapitalize="words"
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Row 3: Trim and License Plate */}
+              <View className="flex-row gap-4">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">Trim (Optional)</Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="SE"
+                      value={vehicleFormData.trim}
+                      onChangeText={(text) => updateVehicleField('trim', text)}
+                      autoCapitalize="characters"
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-textSecondary mb-2">
+                    License Plate (Optional)
+                  </Text>
+                  <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                    <TextInput
+                      placeholder="ABC1234"
+                      value={vehicleFormData.licensePlate}
+                      onChangeText={(text) => updateVehicleField('licensePlate', text.toUpperCase())}
+                      autoCapitalize="characters"
+                      placeholderTextColor="#707070"
+                      style={{ color: '#ffffff', fontSize: 16 }}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Row 4: Odometer */}
+              <View>
+                <Text className="text-sm font-medium text-textSecondary mb-2">
+                  Current Odometer (Optional)
+                </Text>
+                <View className="bg-surface border border-border rounded-xl px-4 py-3">
+                  <TextInput
+                    placeholder="50000"
+                    value={vehicleFormData.odometer}
+                    onChangeText={(text) => updateVehicleField('odometer', text)}
+                    keyboardType="number-pad"
+                    placeholderTextColor="#707070"
+                    style={{ color: '#ffffff', fontSize: 16 }}
+                  />
+                </View>
+              </View>
+
+              {/* Fuel Type Selection */}
+              <View>
+                <Text className="text-sm font-medium text-textSecondary mb-3">Fuel Type</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {FUEL_TYPES.map((fuel) => (
+                    <TouchableOpacity
+                      key={fuel.value}
+                      onPress={() =>
+                        updateVehicleField('fuelType', fuel.value as VehicleFormData['fuelType'])
+                      }
+                      className={`px-4 py-3 rounded-xl border-2 ${
+                        vehicleFormData.fuelType === fuel.value
+                          ? 'bg-gold/20 border-gold'
+                          : 'bg-surface border-border'
+                      }`}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        className={`text-sm font-medium ${
+                          vehicleFormData.fuelType === fuel.value ? 'text-gold' : 'text-foreground'
+                        }`}
+                      >
+                        {fuel.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Bottom Action Buttons */}
+          <View
+            className="px-4 py-4 border-t border-border bg-background"
+            style={{ paddingBottom: insets.bottom + 16 }}
+          >
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCloseVehicleModal}
+                className="flex-1 items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                activeOpacity={0.7}
+              >
+                <Text className="text-base font-semibold text-gold">Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleSubmitVehicle}
+                disabled={createVehicleMutation.isPending}
+                className="flex-1 flex-row items-center justify-center rounded-xl bg-gold py-4"
+                activeOpacity={0.7}
+              >
+                {createVehicleMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#0d0d0d" />
+                ) : (
+                  <Text className="text-base font-semibold text-background">Add Vehicle</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };

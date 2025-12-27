@@ -38,7 +38,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean; _suppressErrorToast?: boolean };
 
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -84,12 +84,14 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Show error toast for other errors
-    const errorMessage = handleApiError(error);
-    useToastStore.getState().setToast({
-      type: 'error',
-      message: errorMessage,
-    });
+    // Only show error toast if not suppressed
+    if (!originalRequest._suppressErrorToast) {
+      const errorMessage = handleApiError(error);
+      useToastStore.getState().setToast({
+        type: 'error',
+        message: errorMessage,
+      });
+    }
 
     return Promise.reject(error);
   }
@@ -112,20 +114,50 @@ export const handleApiError = (error: unknown): string => {
   return 'An unexpected error occurred';
 };
 
+// Extended config type with suppressErrorToast option
+export interface ApiRequestConfig extends AxiosRequestConfig {
+  suppressErrorToast?: boolean;
+}
+
 // Type-safe API wrapper
 export const api = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.get<T>(url, config),
+  get: <T = any>(url: string, config?: ApiRequestConfig) => {
+    const axiosConfig = { ...config };
+    if (config?.suppressErrorToast) {
+      (axiosConfig as any)._suppressErrorToast = true;
+    }
+    return apiClient.get<T>(url, axiosConfig);
+  },
 
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
-    apiClient.post<T>(url, data, config),
+  post: <T = any>(url: string, data?: any, config?: ApiRequestConfig) => {
+    const axiosConfig = { ...config };
+    if (config?.suppressErrorToast) {
+      (axiosConfig as any)._suppressErrorToast = true;
+    }
+    return apiClient.post<T>(url, data, axiosConfig);
+  },
 
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
-    apiClient.put<T>(url, data, config),
+  put: <T = any>(url: string, data?: any, config?: ApiRequestConfig) => {
+    const axiosConfig = { ...config };
+    if (config?.suppressErrorToast) {
+      (axiosConfig as any)._suppressErrorToast = true;
+    }
+    return apiClient.put<T>(url, data, axiosConfig);
+  },
 
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) =>
-    apiClient.patch<T>(url, data, config),
+  patch: <T = any>(url: string, data?: any, config?: ApiRequestConfig) => {
+    const axiosConfig = { ...config };
+    if (config?.suppressErrorToast) {
+      (axiosConfig as any)._suppressErrorToast = true;
+    }
+    return apiClient.patch<T>(url, data, axiosConfig);
+  },
 
-  delete: <T = any>(url: string, config?: AxiosRequestConfig) =>
-    apiClient.delete<T>(url, config),
+  delete: <T = any>(url: string, config?: ApiRequestConfig) => {
+    const axiosConfig = { ...config };
+    if (config?.suppressErrorToast) {
+      (axiosConfig as any)._suppressErrorToast = true;
+    }
+    return apiClient.delete<T>(url, config);
+  },
 };

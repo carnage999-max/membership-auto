@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { TextInput } from '@/components/ui/text-input';
 import { useAuthStore } from '@/stores/auth.store';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,8 +12,12 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { z } from 'zod';
+
+const logo = require('@assets/logo.png');
 
 const signUpSchema = z
   .object({
@@ -76,8 +79,13 @@ export default function SignUpScreen() {
         contentContainerClassName="flex-grow px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View className="mb-8">
+        {/* Header with Logo */}
+        <View className="mb-8 items-center">
+          <Image
+            source={logo}
+            className="h-20 w-20 mb-4"
+            resizeMode="contain"
+          />
           <Text className="mb-2 text-3xl font-bold text-gold">Create Account</Text>
           <Text className="text-base text-textSecondary">
             Join Membership Auto for premium automotive care
@@ -222,9 +230,18 @@ export default function SignUpScreen() {
         </View>
 
         {/* Sign Up Button */}
-        <Button onPress={handleSubmit(onSubmit)} isLoading={isLoading} className="mb-4" size="lg">
-          Create Account
-        </Button>
+        <TouchableOpacity
+          onPress={handleSubmit(onSubmit)}
+          disabled={isLoading}
+          className="mb-4 flex-row items-center justify-center rounded-xl bg-gold py-4"
+          activeOpacity={0.7}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#0d0d0d" />
+          ) : (
+            <Text className="text-base font-semibold text-background">Create Account</Text>
+          )}
+        </TouchableOpacity>
 
         {/* Login Link */}
         <View className="flex-row items-center justify-center">

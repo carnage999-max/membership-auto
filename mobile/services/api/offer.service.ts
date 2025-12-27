@@ -10,7 +10,10 @@ export const offerService = {
     vehicleId?: string;
     location?: string;
   }) => {
-    const response = await api.get<Offer[]>('/offers/', { params });
+    const response = await api.get<Offer[]>('/offers/', {
+      params,
+      suppressErrorToast: true,
+    });
     return response.data;
   },
 };

@@ -23,5 +23,5 @@ export default function Index() {
     return <Redirect href="/(authenticated)" />;
   }
 
-  return <Redirect href="/(guest)/" />;
+  return <Redirect href="/(guest)" />;
 }

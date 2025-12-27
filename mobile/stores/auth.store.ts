@@ -108,18 +108,41 @@ export const useAuthStore = create<AuthState>()(
             return;
           }
 
+          // If we have a token and persisted user data, use that first
+          const currentState = get();
+          if (currentState.user && currentState.isAuthenticated) {
+            // Already have user data from persistence, try to refresh in background
+            set({ isLoading: false });
+
+            // Try to refresh user data in background (don't block)
+            authService.getProfile()
+              .then((user) => set({ user }))
+              .catch((error) => console.warn('Background profile refresh failed:', error));
+
+            return;
+          }
+
           set({ isLoading: true });
 
           const user = await authService.getProfile();
           set({ user, isAuthenticated: true, isLoading: false });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Load user error:', error);
 
-          // Clear invalid tokens
-          await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
-          await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
-
-          set({ user: null, isAuthenticated: false, isLoading: false });
+          // Only clear tokens on 401 (unauthorized), not on 500 (server error)
+          if (error?.response?.status === 401) {
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+            await SecureStore.deleteItemAsync(STORAGE_KEYS.REFRESH_TOKEN);
+            set({ user: null, isAuthenticated: false, isLoading: false });
+          } else {
+            // Keep existing persisted state on server errors
+            const currentState = get();
+            if (currentState.user) {
+              set({ isAuthenticated: true, isLoading: false });
+            } else {
+              set({ isAuthenticated: false, isLoading: false });
+            }
+          }
         }
       },
 

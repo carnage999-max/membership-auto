@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { userService } from '@/services/api/user.service';
 import { useMutation } from '@tanstack/react-query';
 import { showToast } from '@/utils/toast';
@@ -22,6 +21,7 @@ import {
   Linking,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -301,13 +301,21 @@ const HelpScreen = () => {
                 </View>
 
                 {/* Submit Button */}
-                <Button
+                <TouchableOpacity
                   onPress={handleSendMessage}
                   disabled={contactMutation.isPending}
-                  leftIcon={<Send size={20} color="#ffffff" />}
+                  className="flex-row items-center justify-center rounded-xl bg-gold py-4"
+                  activeOpacity={0.7}
                 >
-                  {contactMutation.isPending ? 'Sending...' : 'Send Message'}
-                </Button>
+                  {contactMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#0d0d0d" />
+                  ) : (
+                    <>
+                      <Send size={20} color="#0d0d0d" />
+                      <Text className="ml-2 text-base font-semibold text-background">Send Message</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
 
                 <Text className="text-xs text-textMuted text-center">
                   We typically respond within 24 hours
