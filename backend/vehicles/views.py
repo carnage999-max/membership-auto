@@ -30,6 +30,10 @@ class VehicleListCreateView(APIView):
         logger = logging.getLogger(__name__)
         
         try:
+            logger.info(f"Vehicle creation request: method={request.method}, content-type={request.META.get('CONTENT_TYPE')}")
+            logger.info(f"Request data keys: {list(request.data.keys())}")
+            logger.info(f"Request data: {dict(request.data) if hasattr(request.data, 'keys') else request.data}")
+            
             serializer = VehicleSerializer(data=request.data)
             if serializer.is_valid():
                 vehicle = serializer.save(user=request.user)
