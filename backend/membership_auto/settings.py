@@ -173,8 +173,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Disable automatic slash appending for URL routing
-APPEND_SLASH = False
+# Enable automatic slash appending for URL routing (allows /api/schema to redirect to /api/schema/)
+APPEND_SLASH = True
 
 USE_I18N = True
 
