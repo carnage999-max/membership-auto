@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import Vehicle, TelematicsSnapshot, FuelLog
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -18,7 +21,7 @@ class VehicleSerializer(serializers.ModelSerializer):
     photoUrl = serializers.CharField(
         source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
     )
-    image = serializers.ImageField(write_only=True, required=False, allow_null=True, allow_empty_file=True)
+    image = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True, help_text="Base64 encoded image or multipart file")
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -50,64 +53,75 @@ class VehicleSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        image = validated_data.pop('image', None)
+        image_data = validated_data.pop('image', None)
         vehicle = super().create(validated_data)
 
-        if image:
+        if image_data:
             try:
-                # Upload image to S3 and save URL
                 from files.s3_utils import upload_file_to_s3
                 from pathlib import Path
+                from django.core.files.base import ContentFile
+                import base64
                 
-                extension = Path(image.name).suffix
-                filename = f"vehicles/{vehicle.id}{extension}"
-
+                # Handle base64 encoded image
+                if isinstance(image_data, str):
+                    if image_data.startswith('data:'):
+                        # Extract base64 part from data URI
+                        header, encoded = image_data.split(',', 1)
+                        image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
+                    else:
+                        # Assume plain base64
+                        image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
+                else:
+                    image_file = image_data
+                
+                filename = f"vehicles/{vehicle.id}.jpg"
+                
                 # Upload to S3
-                s3_url = upload_file_to_s3(image, filename)
+                s3_url = upload_file_to_s3(image_file, filename)
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
             except ImportError as e:
-                # Log import error
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
-                # Log the error but don't fail vehicle creation
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Failed to upload vehicle image: {str(e)}", exc_info=True)
                 # Vehicle was created, just without the image
 
         return vehicle
 
     def update(self, instance, validated_data):
-        image = validated_data.pop('image', None)
+        image_data = validated_data.pop('image', None)
         vehicle = super().update(instance, validated_data)
 
-        if image:
+        if image_data:
             try:
-                # Upload image to S3 and save URL
                 from files.s3_utils import upload_file_to_s3
-                from pathlib import Path
+                from django.core.files.base import ContentFile
+                import base64
                 
-                extension = Path(image.name).suffix
-                filename = f"vehicles/{vehicle.id}{extension}"
-
+                # Handle base64 encoded image
+                if isinstance(image_data, str):
+                    if image_data.startswith('data:'):
+                        # Extract base64 part from data URI
+                        header, encoded = image_data.split(',', 1)
+                        image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
+                    else:
+                        # Assume plain base64
+                        image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
+                else:
+                    image_file = image_data
+                
+                filename = f"vehicles/{vehicle.id}.jpg"
+                
                 # Upload to S3
-                s3_url = upload_file_to_s3(image, filename)
+                s3_url = upload_file_to_s3(image_file, filename)
                 if s3_url:
                     vehicle.photo_url = s3_url
                     vehicle.save()
             except ImportError as e:
-                # Log import error
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Failed to import S3 utilities: {str(e)}")
             except Exception as e:
-                # Log the error but don't fail vehicle update
-                import logging
-                logger = logging.getLogger(__name__)
                 logger.error(f"Failed to upload vehicle image: {str(e)}", exc_info=True)
                 # Vehicle was updated, just without the image
 
