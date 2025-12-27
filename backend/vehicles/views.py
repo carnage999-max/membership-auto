@@ -24,17 +24,26 @@ class VehicleListCreateView(APIView):
 
     def post(self, request):
         """Add a new vehicle and auto-create service schedules"""
-        serializer = VehicleSerializer(data=request.data)
-        if serializer.is_valid():
-            vehicle = serializer.save(user=request.user)
+        try:
+            serializer = VehicleSerializer(data=request.data)
+            if serializer.is_valid():
+                vehicle = serializer.save(user=request.user)
 
-            # Auto-create standard service schedules for this vehicle
-            from services.views import create_default_service_schedules
+                # Auto-create standard service schedules for this vehicle
+                from services.views import create_default_service_schedules
 
-            create_default_service_schedules(vehicle)
+                create_default_service_schedules(vehicle)
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Error creating vehicle: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": f"Failed to create vehicle: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class VehicleDetailView(APIView):

@@ -28,25 +28,47 @@ def upload_file_to_s3(file, filename):
         str: Public URL of the uploaded file
     """
     if not settings.USE_S3 or not settings.AWS_STORAGE_BUCKET_NAME:
-        # Return None or mock URL if S3 is not configured
-        return None
+        # Return mock URL if S3 is not configured (for development)
+        return f"https://example.com/mock/{filename}"
 
     try:
+        # Ensure file pointer is at the beginning
+        if hasattr(file, 'seek'):
+            file.seek(0)
+
         s3_client = get_s3_client()
 
         # Determine content type
         content_type = getattr(file, 'content_type', 'application/octet-stream')
 
-        # Upload file to S3
-        s3_client.upload_fileobj(
-            file,
-            settings.AWS_STORAGE_BUCKET_NAME,
-            filename,
-            ExtraArgs={
-                'ContentType': content_type,
-                'ACL': 'public-read',  # Make the file publicly accessible
-            }
-        )
+        # Try uploading with public-read ACL first
+        try:
+            s3_client.upload_fileobj(
+                file,
+                settings.AWS_STORAGE_BUCKET_NAME,
+                filename,
+                ExtraArgs={
+                    'ContentType': content_type,
+                    'ACL': 'public-read',  # Make the file publicly accessible
+                }
+            )
+        except ClientError as acl_error:
+            # If ACL error, try without ACL (bucket might have ACLs disabled)
+            if 'AccessControlListNotSupported' in str(acl_error):
+                # Reset file pointer and try again without ACL
+                if hasattr(file, 'seek'):
+                    file.seek(0)
+
+                s3_client.upload_fileobj(
+                    file,
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    filename,
+                    ExtraArgs={
+                        'ContentType': content_type,
+                    }
+                )
+            else:
+                raise
 
         # Generate public URL
         if settings.AWS_S3_CUSTOM_DOMAIN:
@@ -58,7 +80,11 @@ def upload_file_to_s3(file, filename):
 
     except ClientError as e:
         print(f"Error uploading file to S3: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise Exception(f"Failed to upload file to S3: {str(e)}")
     except Exception as e:
         print(f"Unexpected error uploading file to S3: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise Exception(f"Failed to upload file to S3: {str(e)}")
