@@ -5,7 +5,10 @@ import useCustomFonts from '@utils/hooks/use-custom-fonts';
 import '@utils/i18n/config';
 import { ApiProvider } from '@utils/providers/api-provider';
 import { Slot, SplashScreen } from 'expo-router';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import '../global.css';
+
+const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,12 +39,14 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ApiProvider>
-          <Slot />
-          <Toaster />
-        </ApiProvider>
-      </QueryClientProvider>
+      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+        <QueryClientProvider client={queryClient}>
+          <ApiProvider>
+            <Slot />
+            <Toaster />
+          </ApiProvider>
+        </QueryClientProvider>
+      </StripeProvider>
     </ErrorBoundary>
   );
 }

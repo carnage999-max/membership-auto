@@ -36,7 +36,7 @@ export const userService = {
    * Update user profile
    */
   updateProfile: async (data: UpdateProfileData) => {
-    const response = await api.put<User>('/users/profile/', data);
+    const response = await api.patch<{ message: string }>('/users/profile/', data);
     return response.data;
   },
 

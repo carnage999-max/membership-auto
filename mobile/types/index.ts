@@ -5,6 +5,13 @@ export interface User {
   phone: string;
   name: string;
   membershipId: string;
+  membershipPlan?: string | null;
+  membershipStatus?: string;
+  monthlyFee?: number;
+  renewalDate?: string | null;
+  canCancel?: boolean;
+  canReactivate?: boolean;
+  autoRenew?: boolean;
   referralCode: string;
   rewardsBalance: number;
   createdAt: string;
@@ -43,6 +50,7 @@ export interface Vehicle {
   dongleId?: string;
   fuelType: 'gasoline' | 'diesel' | 'electric' | 'hybrid';
   imageUrl?: string;
+  photoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -122,6 +130,37 @@ export interface Membership {
   renewalDate: string;
   autoRenew: boolean;
   benefits: string[];
+}
+
+// Plan & Payment Types
+export interface Plan {
+  id: string;
+  name: string;
+  priceMonthly: number;
+  tier: string;
+  features: string[];
+  createdAt: string;
+}
+
+export interface PaymentIntent {
+  clientSecret: string;
+  paymentId: string;
+  amount: number;
+  currency: string;
+  publishableKey: string;
+}
+
+export interface Payment {
+  id: string;
+  userId: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  stripePaymentIntentId?: string;
+  createdAt: string;
+  completedAt?: string;
 }
 
 // Service & Appointment Types

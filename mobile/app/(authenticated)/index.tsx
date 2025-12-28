@@ -137,12 +137,14 @@ const DashboardScreen = () => {
           <View className="gap-3">
             <View className="flex-row items-center">
               <CheckCircle2 size={18} color="#4caf50" />
-              <Text className="ml-3 text-sm text-textSecondary">Premium Plan • Renews Monthly</Text>
+              <Text className="ml-3 text-sm text-textSecondary">
+                {user?.membershipPlan || 'Premium'} Plan • Renews Monthly
+              </Text>
             </View>
             <View className="flex-row items-center">
               <Calendar size={18} color="#cba86e" />
               <Text className="ml-3 text-sm text-textSecondary">
-                Next renewal: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                Next renewal: {user?.renewalDate ? new Date(user.renewalDate).toLocaleDateString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
               </Text>
             </View>
           </View>

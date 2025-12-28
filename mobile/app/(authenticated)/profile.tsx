@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth.store';
+import { useRouter } from 'expo-router';
 import { userService, type SavingsData } from '@/services/api/user.service';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/utils/toast';
@@ -22,9 +23,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user, logout } = useAuthStore();
   const queryClient = useQueryClient();
-  const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
+  const [autoRenewEnabled, setAutoRenewEnabled] = useState(user?.autoRenew ?? true);
+
+  // Update autoRenewEnabled when user data changes
+  React.useEffect(() => {
+    if (user?.autoRenew !== undefined) {
+      setAutoRenewEnabled(user.autoRenew);
+    }
+  }, [user?.autoRenew]);
 
   // Fetch savings data with error handling (suppresses error toast)
   const { data: savings, isLoading: savingsLoading } = useQuery({
@@ -216,15 +225,43 @@ const ProfileScreen = () => {
             <View className="flex-row items-center justify-between py-3">
               <Text className="text-sm text-textSecondary">Plan</Text>
               <View className="rounded-full bg-gold/20 px-3 py-1">
-                <Text className="text-sm font-semibold text-gold">Premium</Text>
+                <Text className="text-sm font-semibold text-gold">
+                  {user?.membershipPlan || 'No Plan'}
+                </Text>
               </View>
             </View>
             <View className="flex-row items-center justify-between py-3">
               <Text className="text-sm text-textSecondary">Status</Text>
-              <View className="rounded-full bg-success/20 px-3 py-1">
-                <Text className="text-sm font-semibold text-success">Active</Text>
+              <View className={`rounded-full px-3 py-1 ${
+                user?.membershipStatus === 'active' ? 'bg-success/20' :
+                user?.membershipStatus === 'cancelled' ? 'bg-error/20' :
+                'bg-gray-500/20'
+              }`}>
+                <Text className={`text-sm font-semibold ${
+                  user?.membershipStatus === 'active' ? 'text-success' :
+                  user?.membershipStatus === 'cancelled' ? 'text-error' :
+                  'text-gray-500'
+                }`}>
+                  {user?.membershipStatus ? user.membershipStatus.charAt(0).toUpperCase() + user.membershipStatus.slice(1) : 'Unknown'}
+                </Text>
               </View>
             </View>
+            {user?.monthlyFee !== undefined && (
+              <View className="flex-row items-center justify-between py-3">
+                <Text className="text-sm text-textSecondary">Monthly Fee</Text>
+                <Text className="text-sm font-semibold text-foreground">
+                  ${user.monthlyFee}/mo
+                </Text>
+              </View>
+            )}
+            {user?.renewalDate && (
+              <View className="flex-row items-center justify-between py-3">
+                <Text className="text-sm text-textSecondary">Next Renewal</Text>
+                <Text className="text-sm font-semibold text-foreground">
+                  {new Date(user.renewalDate).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
             <View className="flex-row items-center justify-between py-3">
               <Text className="text-sm text-textSecondary">Auto-Renew</Text>
               <Switch
@@ -239,36 +276,50 @@ const ProfileScreen = () => {
             {/* Membership Actions */}
             <View className="mt-4 gap-3">
               <TouchableOpacity
-                onPress={handleReactivateMembership}
-                disabled={reactivateMembershipMutation.isPending}
-                className="flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                onPress={() => router.push('/(authenticated)/plans')}
+                className="flex-row items-center justify-center rounded-xl bg-gold py-4"
                 activeOpacity={0.7}
               >
-                {reactivateMembershipMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#cba86e" />
-                ) : (
-                  <>
-                    <RefreshCw size={18} color="#cba86e" />
-                    <Text className="ml-2 text-base font-semibold text-gold">Reactivate Membership</Text>
-                  </>
-                )}
+                <Text className="text-base font-semibold text-white">
+                  {user?.membershipPlan ? 'Change Plan' : 'Choose a Plan'}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={handleCancelMembership}
-                disabled={cancelMembershipMutation.isPending}
-                className="flex-row items-center justify-center rounded-xl bg-error py-4"
-                activeOpacity={0.7}
-              >
-                {cancelMembershipMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <>
-                    <XCircle size={18} color="#ffffff" />
-                    <Text className="ml-2 text-base font-semibold text-white">Cancel Membership</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              {user?.canReactivate && (
+                <TouchableOpacity
+                  onPress={handleReactivateMembership}
+                  disabled={reactivateMembershipMutation.isPending}
+                  className="flex-row items-center justify-center rounded-xl border-2 border-gold bg-transparent py-4"
+                  activeOpacity={0.7}
+                >
+                  {reactivateMembershipMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#cba86e" />
+                  ) : (
+                    <>
+                      <RefreshCw size={18} color="#cba86e" />
+                      <Text className="ml-2 text-base font-semibold text-gold">Reactivate Membership</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {user?.canCancel && (
+                <TouchableOpacity
+                  onPress={handleCancelMembership}
+                  disabled={cancelMembershipMutation.isPending}
+                  className="flex-row items-center justify-center rounded-xl bg-error py-4"
+                  activeOpacity={0.7}
+                >
+                  {cancelMembershipMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <XCircle size={18} color="#ffffff" />
+                      <Text className="ml-2 text-base font-semibold text-white">Cancel Membership</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </Card>
 
@@ -280,21 +331,21 @@ const ProfileScreen = () => {
               icon={User}
               title="Edit Profile"
               subtitle="Update your personal information"
-              onPress={() => showToast('info', 'Edit Profile feature coming soon')}
+              onPress={() => router.push('/edit-profile')}
             />
 
             <ProfileMenuItem
               icon={Shield}
               title="Change Password"
               subtitle="Update your security credentials"
-              onPress={() => showToast('info', 'Change Password feature coming soon')}
+              onPress={() => router.push('/change-password')}
             />
 
             <ProfileMenuItem
               icon={CreditCard}
               title="Payment Methods"
               subtitle="Manage your billing information"
-              onPress={() => showToast('info', 'Payment Methods feature coming soon')}
+              onPress={() => router.push('/payment-methods')}
             />
           </Card>
 
@@ -306,7 +357,7 @@ const ProfileScreen = () => {
               icon={Bell}
               title="Notifications"
               subtitle="Manage notification preferences"
-              onPress={() => showToast('info', 'Notification settings feature coming soon')}
+              onPress={() => router.push('/notifications')}
             />
 
             <ProfileMenuItem
@@ -320,7 +371,7 @@ const ProfileScreen = () => {
               icon={Settings}
               title="Preferences"
               subtitle="App settings and preferences"
-              onPress={() => showToast('info', 'App preferences feature coming soon')}
+              onPress={() => router.push('/(authenticated)/preferences')}
             />
           </Card>
 

@@ -55,8 +55,10 @@ export const authService = {
   /**
    * Get current user profile
    */
-  getProfile: async () => {
-    const response = await api.get<User>('/users/profile/');
+  getProfile: async (options?: { suppressErrorToast?: boolean }) => {
+    const response = await api.get<User>('/users/profile/', {
+      suppressErrorToast: options?.suppressErrorToast,
+    });
     return response.data;
   },
 

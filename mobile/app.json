@@ -32,6 +32,18 @@
       "bundler": "metro"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "ndkVersion": "27.3.13750724",
+            "minSdkVersion": 24,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ],
       "expo-router",
       "expo-font",
       "expo-localization",
@@ -67,6 +79,13 @@
           "url": "https://sentry.io/",
           "organization": "membership-auto",
           "project": "membership-auto-mobile"
+        }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.membershipauto.app",
+          "enableGooglePay": true
         }
       ]
     ]
