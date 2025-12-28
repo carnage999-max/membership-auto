@@ -114,8 +114,8 @@ export const useAuthStore = create<AuthState>()(
             // Already have user data from persistence, try to refresh in background
             set({ isLoading: false });
 
-            // Try to refresh user data in background (don't block)
-            authService.getProfile()
+            // Try to refresh user data in background (don't block, suppress error toast)
+            authService.getProfile({ suppressErrorToast: true })
               .then((user) => set({ user }))
               .catch((error) => console.warn('Background profile refresh failed:', error));
 

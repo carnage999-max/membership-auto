@@ -184,6 +184,69 @@ const AuthenticatedLayout = () => {
           ),
         }}
       />
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Edit Profile" onPress={() => router.push('/(authenticated)/profile')} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="change-password"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Change Password" onPress={() => router.push('/(authenticated)/profile')} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Notifications" onPress={() => router.push('/(authenticated)/profile')} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="payment-methods"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Payment Methods" onPress={() => router.push('/(authenticated)/profile')} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="preferences"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Preferences" onPress={() => router.push('/(authenticated)/profile')} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="plans"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Membership Plans" onPress={() => router.back()} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="checkout"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Checkout" onPress={() => router.back()} />
+          ),
+        }}
+      />
     </Tabs>
   );
 };
