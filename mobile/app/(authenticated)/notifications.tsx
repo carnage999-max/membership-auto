@@ -36,7 +36,7 @@ const NotificationSettingsScreen = () => {
       await new Promise((resolve) => setTimeout(resolve, 500));
       showToast('success', 'Notification settings saved');
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      router.push('/(authenticated)/profile');
+      router.back();
     } catch (error) {
       showToast('error', 'Failed to save settings');
     } finally {
@@ -78,6 +78,15 @@ const NotificationSettingsScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
+      {/* Header */}
+      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
+        <TouchableOpacity onPress={() => router.back()} className="p-2">
+          <ChevronLeft size={24} color="#cba86e" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-foreground">Notifications</Text>
+        <View className="w-10" />
+      </View>
+
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
           {/* Notification Channels */}
@@ -162,7 +171,7 @@ const NotificationSettingsScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => router.push('/(authenticated)/profile')}
+              onPress={() => router.back()}
               disabled={isLoading}
               className="flex-row items-center justify-center rounded-xl border-2 border-border bg-transparent py-4"
               activeOpacity={0.7}
