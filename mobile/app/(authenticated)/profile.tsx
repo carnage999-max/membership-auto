@@ -246,7 +246,7 @@ const ProfileScreen = () => {
                 </Text>
               </View>
             </View>
-            {user?.monthlyFee !== undefined && (
+            {user?.monthlyFee !== undefined && user.monthlyFee > 0 && (
               <View className="flex-row items-center justify-between py-3">
                 <Text className="text-sm text-textSecondary">Monthly Fee</Text>
                 <Text className="text-sm font-semibold text-foreground">

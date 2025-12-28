@@ -16,69 +16,60 @@ const EditProfileScreen = () => {
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    firstName: user?.name?.split(' ')[0] || '',
-    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { first_name?: string; last_name?: string; phone?: string }) =>
-      userService.updateProfile(data),
+    mutationFn: (data: typeof formData) => userService.updateProfile(data),
     onSuccess: () => {
       showToast('success', 'Profile updated successfully');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      router.push('/(authenticated)/profile');
+      router.back();
     },
-    onError: (error: any) => {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Failed to update profile';
-      showToast('error', errorMsg);
+    onError: () => {
+      showToast('error', 'Failed to update profile');
     },
   });
 
   const handleSave = () => {
-    if (!formData.firstName.trim()) {
-      showToast('error', 'First name is required');
+    if (!formData.name.trim()) {
+      showToast('error', 'Name is required');
       return;
     }
-
-    updateProfileMutation.mutate({
-      first_name: formData.firstName.trim(),
-      last_name: formData.lastName.trim() || undefined,
-      phone: formData.phone.trim() || undefined,
-    });
+    if (!formData.email.trim()) {
+      showToast('error', 'Email is required');
+      return;
+    }
+    updateProfileMutation.mutate(formData);
   };
 
   const handleCancel = () => {
-    router.push('/(authenticated)/profile');
+    router.back();
   };
 
   return (
     <View className="flex-1 bg-background">
+      {/* Header */}
+      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
+        <TouchableOpacity onPress={handleCancel} className="p-2">
+          <ChevronLeft size={24} color="#cba86e" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-foreground">Edit Profile</Text>
+        <View className="w-10" />
+      </View>
+
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
-          {/* First Name Field */}
+          {/* Name Field */}
           <Card className="mb-4">
             <View className="mb-2">
-              <Text className="text-sm font-semibold text-foreground mb-2">First Name</Text>
+              <Text className="text-sm font-semibold text-foreground mb-2">Full Name</Text>
               <RNTextInput
-                value={formData.firstName}
-                onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                placeholder="Your first name"
-                placeholderTextColor="#999"
-                className="border border-border rounded-lg px-4 py-3 text-base text-foreground bg-surface"
-              />
-            </View>
-          </Card>
-
-          {/* Last Name Field */}
-          <Card className="mb-4">
-            <View className="mb-2">
-              <Text className="text-sm font-semibold text-foreground mb-2">Last Name</Text>
-              <RNTextInput
-                value={formData.lastName}
-                onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                placeholder="Your last name"
+                value={formData.name}
+                onChangeText={(text) => setFormData({ ...formData, name: text })}
+                placeholder="Your full name"
                 placeholderTextColor="#999"
                 className="border border-border rounded-lg px-4 py-3 text-base text-foreground bg-surface"
               />

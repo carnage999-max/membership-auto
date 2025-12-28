@@ -132,10 +132,10 @@ def refresh_token(request):
         refresh = RefreshToken(refresh_token)
         access_token = str(refresh.access_token)
         # Return both formats for compatibility
-        return Response({
-            "access": access_token,
-            "accessToken": access_token
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"access": access_token, "accessToken": access_token},
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         return Response(
             {"error": "Invalid refresh token"},

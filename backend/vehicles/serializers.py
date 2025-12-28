@@ -19,9 +19,18 @@ class VehicleSerializer(serializers.ModelSerializer):
         source="fuel_type", allow_blank=True, allow_null=True, required=False
     )
     photoUrl = serializers.CharField(
-        source="photo_url", read_only=True, allow_blank=True, allow_null=True, required=False
+        source="photo_url",
+        read_only=True,
+        allow_blank=True,
+        allow_null=True,
+        required=False,
     )
-    image = serializers.FileField(write_only=True, required=False, allow_null=True, help_text="Image file or base64 encoded image")
+    image = serializers.FileField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+        help_text="Image file or base64 encoded image",
+    )
     createdAt = serializers.DateTimeField(source="created_at", read_only=True)
 
     class Meta:
@@ -50,16 +59,16 @@ class VehicleSerializer(serializers.ModelSerializer):
             "photoUrl",
         ]
         extra_kwargs = {
-            'vin': {'required': False, 'allow_blank': True, 'allow_null': True},
-            'make': {'allow_blank': True},
-            'model': {'allow_blank': True},
-            'trim': {'required': False, 'allow_blank': True, 'allow_null': True},
-            'year': {'required': False, 'allow_null': True},
-            'odometer': {'required': False, 'allow_null': True},
+            "vin": {"required": False, "allow_blank": True, "allow_null": True},
+            "make": {"allow_blank": True},
+            "model": {"allow_blank": True},
+            "trim": {"required": False, "allow_blank": True, "allow_null": True},
+            "year": {"required": False, "allow_null": True},
+            "odometer": {"required": False, "allow_null": True},
         }
 
     def create(self, validated_data):
-        image_data = validated_data.pop('image', None)
+        image_data = validated_data.pop("image", None)
         vehicle = super().create(validated_data)
 
         if image_data:
@@ -67,22 +76,29 @@ class VehicleSerializer(serializers.ModelSerializer):
                 from files.s3_utils import upload_file_to_s3
                 from django.core.files.base import ContentFile
                 import base64
-                
+
                 # Handle base64 string or file upload
                 if isinstance(image_data, str):
                     # Base64 string case
-                    if image_data.startswith('data:'):
-                        header, encoded = image_data.split(',', 1)
-                        image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
+                    if image_data.startswith("data:"):
+                        header, encoded = image_data.split(",", 1)
+                        image_file = ContentFile(
+                            base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg"
+                        )
                     else:
-                        image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
+                        image_file = ContentFile(
+                            base64.b64decode(image_data),
+                            name=f"vehicle_{vehicle.id}.jpg",
+                        )
                 else:
                     # File object case (multipart upload) - read the file content first
                     image_file_content = image_data.read()
-                    image_file = ContentFile(image_file_content, name=f"vehicle_{vehicle.id}.jpg")
-                
+                    image_file = ContentFile(
+                        image_file_content, name=f"vehicle_{vehicle.id}.jpg"
+                    )
+
                 filename = f"vehicles/{vehicle.id}.jpg"
-                
+
                 # Upload to S3
                 s3_url = upload_file_to_s3(image_file, filename)
                 if s3_url:
@@ -98,7 +114,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         return vehicle
 
     def update(self, instance, validated_data):
-        image_data = validated_data.pop('image', None)
+        image_data = validated_data.pop("image", None)
         vehicle = super().update(instance, validated_data)
 
         if image_data:
@@ -106,22 +122,29 @@ class VehicleSerializer(serializers.ModelSerializer):
                 from files.s3_utils import upload_file_to_s3
                 from django.core.files.base import ContentFile
                 import base64
-                
+
                 # Handle base64 string or file upload
                 if isinstance(image_data, str):
                     # Base64 string case
-                    if image_data.startswith('data:'):
-                        header, encoded = image_data.split(',', 1)
-                        image_file = ContentFile(base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg")
+                    if image_data.startswith("data:"):
+                        header, encoded = image_data.split(",", 1)
+                        image_file = ContentFile(
+                            base64.b64decode(encoded), name=f"vehicle_{vehicle.id}.jpg"
+                        )
                     else:
-                        image_file = ContentFile(base64.b64decode(image_data), name=f"vehicle_{vehicle.id}.jpg")
+                        image_file = ContentFile(
+                            base64.b64decode(image_data),
+                            name=f"vehicle_{vehicle.id}.jpg",
+                        )
                 else:
                     # File object case (multipart upload) - read the file content first
                     image_file_content = image_data.read()
-                    image_file = ContentFile(image_file_content, name=f"vehicle_{vehicle.id}.jpg")
-                
+                    image_file = ContentFile(
+                        image_file_content, name=f"vehicle_{vehicle.id}.jpg"
+                    )
+
                 filename = f"vehicles/{vehicle.id}.jpg"
-                
+
                 # Upload to S3
                 s3_url = upload_file_to_s3(image_file, filename)
                 if s3_url:

@@ -94,6 +94,17 @@ const PaymentMethodsScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
+      {/* Header */}
+      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
+        <TouchableOpacity onPress={() => router.back()} className="p-2">
+          <ChevronLeft size={24} color="#cba86e" />
+        </TouchableOpacity>
+        <Text className="text-lg font-bold text-foreground">Payment Methods</Text>
+        <TouchableOpacity onPress={() => showToast('info', 'Add payment method - coming soon')} className="p-2">
+          <Plus size={24} color="#cba86e" />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
           {/* Info Card */}

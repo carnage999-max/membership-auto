@@ -27,13 +27,18 @@ class VehicleListCreateView(APIView):
     def post(self, request):
         """Add a new vehicle and auto-create service schedules"""
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         try:
-            logger.info(f"Vehicle creation request: method={request.method}, content-type={request.META.get('CONTENT_TYPE')}")
+            logger.info(
+                f"Vehicle creation request: method={request.method}, content-type={request.META.get('CONTENT_TYPE')}"
+            )
             logger.info(f"Request data keys: {list(request.data.keys())}")
-            logger.info(f"Request data: {dict(request.data) if hasattr(request.data, 'keys') else request.data}")
-            
+            logger.info(
+                f"Request data: {dict(request.data) if hasattr(request.data, 'keys') else request.data}"
+            )
+
             serializer = VehicleSerializer(data=request.data)
             if serializer.is_valid():
                 vehicle = serializer.save(user=request.user)
@@ -50,7 +55,7 @@ class VehicleListCreateView(APIView):
             logger.error(f"Error creating vehicle: {str(e)}", exc_info=True)
             return Response(
                 {"error": f"Failed to create vehicle: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
