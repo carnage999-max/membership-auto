@@ -59,3 +59,7 @@ volumes:
   static_volume:
   media_volume:
 
+networks:
+  default:
+    name: membership-auto_membership-auto-network
+    external: true
