@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "vehicle_health",
     "settings",
     "payments",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -273,3 +274,4 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@membershipauto.com")
 SERVER_EMAIL = os.getenv("SERVER_EMAIL", "noreply@membershipauto.com")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://membershipauto.com")
+FIREBASE_SERVICE_ACCOUNT_PATH = os.path.join(BASE_DIR, 'firebase-service-account.json')

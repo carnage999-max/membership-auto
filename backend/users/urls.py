@@ -20,4 +20,5 @@ urlpatterns = [
     path("contact/", send_contact_message, name="contact"),
     path("forgot-password/", forgot_password, name="forgot_password"),
     path("reset-password/", reset_password, name="reset_password"),
+    path("request-deletion/", views.request_data_deletion, name="request_deletion"),
 ]
