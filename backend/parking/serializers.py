@@ -6,6 +6,7 @@ class ParkingSpotSerializer(serializers.ModelSerializer):
     vehicle_info = serializers.SerializerMethodField()
     time_parked = serializers.SerializerMethodField()
     is_active = serializers.BooleanField(source='active', required=False)
+    vehicle = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = ParkingSpot
