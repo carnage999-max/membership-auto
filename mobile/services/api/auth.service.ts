@@ -28,13 +28,26 @@ export const authService = {
    * Login user
    */
   login: async (credentials: LoginCredentials) => {
-    const response = await api.post<any>('/users/login/', credentials);
+    const response = await api.post<any>('/users/login/', credentials, {
+      suppressErrorToast: true,
+    });
     const data = response.data;
-    return {
+
+    console.log('Login response data:', JSON.stringify(data, null, 2));
+
+    const result = {
       user: transformUserData(data.user || data),
       accessToken: data.accessToken || data.access_token || data.access,
       refreshToken: data.refreshToken || data.refresh_token || data.refresh,
     };
+
+    console.log('Transformed result:', {
+      hasUser: !!result.user,
+      hasAccessToken: !!result.accessToken,
+      hasRefreshToken: !!result.refreshToken
+    });
+
+    return result;
   },
 
   /**

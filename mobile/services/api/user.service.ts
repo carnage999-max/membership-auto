@@ -7,6 +7,18 @@ export interface UpdateProfileData {
   phone?: string;
 }
 
+export interface UpdateNotificationSettingsData {
+  settings: {
+    emailNotifications?: boolean;
+    pushNotifications?: boolean;
+    smsNotifications?: boolean;
+    appointmentReminders?: boolean;
+    membershipUpdates?: boolean;
+    promotionalOffers?: boolean;
+    serviceReminders?: boolean;
+  };
+}
+
 export interface ChangePasswordData {
   current_password: string;
   new_password: string;
@@ -36,6 +48,25 @@ export const userService = {
    * Update user profile
    */
   updateProfile: async (data: UpdateProfileData) => {
+    // Split name into first_name and last_name for backend
+    const nameParts = data.name?.split(' ') || [];
+    const first_name = nameParts[0] || '';
+    const last_name = nameParts.slice(1).join(' ') || '';
+
+    const payload = {
+      first_name,
+      last_name,
+      phone: data.phone,
+    };
+
+    const response = await api.patch<{ message: string }>('/users/profile/', payload);
+    return response.data;
+  },
+
+  /**
+   * Update notification settings
+   */
+  updateNotificationSettings: async (data: UpdateNotificationSettingsData) => {
     const response = await api.patch<{ message: string }>('/users/profile/', data);
     return response.data;
   },

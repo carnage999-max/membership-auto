@@ -1,82 +1,111 @@
 import { api } from './client';
-import type { Plan, PaymentIntent, Payment } from '@/types';
 
-// Transform snake_case API response to camelCase Plan type
-const transformPlanData = (data: any): Plan => {
-  return {
-    id: data.id,
-    name: data.name,
-    priceMonthly: data.price_monthly ?? data.priceMonthly ?? 0,
-    tier: data.tier || '',
-    features: data.features || [],
-    createdAt: data.created_at || data.createdAt || '',
-  };
-};
+export interface MembershipPlan {
+  id: string;
+  name: string;
+  price: number;
+  interval: 'month' | 'year';
+  features: string[];
+  stripePriceId: string;
+  popular?: boolean;
+}
 
-// Transform snake_case API response to camelCase PaymentIntent type
-const transformPaymentIntent = (data: any): PaymentIntent => {
-  return {
-    clientSecret: data.client_secret || data.clientSecret,
-    paymentId: data.payment_id || data.paymentId,
-    amount: data.amount ?? 0,
-    currency: data.currency || 'usd',
-    publishableKey: data.publishable_key || data.publishableKey || '',
-  };
-};
+export interface PaymentIntent {
+  clientSecret: string;
+  amount: number;
+  currency: string;
+}
 
-// Transform snake_case API response to camelCase Payment type
-const transformPaymentData = (data: any): Payment => {
-  return {
-    id: data.id,
-    userId: data.user_id || data.userId || data.user,
-    planId: data.plan_id || data.planId || data.plan,
-    planName: data.plan_name || data.planName || '',
-    amount: data.amount ?? 0,
-    currency: data.currency || 'usd',
-    status: data.status || 'pending',
-    stripePaymentIntentId: data.stripe_payment_intent_id || data.stripePaymentIntentId,
-    createdAt: data.created_at || data.createdAt || '',
-    completedAt: data.completed_at || data.completedAt,
-  };
-};
+export interface Subscription {
+  id: string;
+  planId: string;
+  status: 'active' | 'canceled' | 'past_due' | 'incomplete';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+}
 
 export const paymentService = {
   /**
-   * Get all available membership plans
+   * Get available membership plans
    */
-  getPlans: async (): Promise<Plan[]> => {
-    const response = await api.get<any[]>('/payments/plans/');
-    return response.data.map(transformPlanData);
-  },
-
-  /**
-   * Create a payment intent for a selected plan
-   */
-  createPaymentIntent: async (planId: string): Promise<PaymentIntent> => {
-    const response = await api.post<any>('/payments/create-payment-intent/', {
-      plan_id: planId,
-    });
-    return transformPaymentIntent(response.data);
-  },
-
-  /**
-   * Confirm payment after successful Stripe payment
-   */
-  confirmPayment: async (paymentId: string) => {
-    const response = await api.post<{ message: string; membership_created: boolean; plan_name: string }>(
-      '/payments/confirm-payment/',
-      {
-        payment_id: paymentId,
-      }
-    );
+  getPlans: async () => {
+    const response = await api.get<MembershipPlan[]>('/payments/plans/');
     return response.data;
   },
 
   /**
-   * Get payment history
+   * Create payment intent for subscription
    */
-  getPaymentHistory: async (): Promise<Payment[]> => {
-    const response = await api.get<any[]>('/payments/history/');
-    return response.data.map(transformPaymentData);
+  createPaymentIntent: async (planId: string) => {
+    const response = await api.post<PaymentIntent>('/payments/create-payment-intent/', {
+      plan_id: planId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Subscribe to a plan
+   */
+  subscribe: async (planId: string, paymentMethodId: string) => {
+    const response = await api.post<Subscription>('/payments/subscribe/', {
+      plan_id: planId,
+      payment_method_id: paymentMethodId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get current subscription
+   */
+  getCurrentSubscription: async () => {
+    const response = await api.get<Subscription>('/payments/subscription/', {
+      suppressErrorToast: true,
+    });
+    return response.data;
+  },
+
+  /**
+   * Cancel subscription
+   */
+  cancelSubscription: async () => {
+    const response = await api.post<{ message: string }>('/payments/cancel-subscription/');
+    return response.data;
+  },
+
+  /**
+   * Get payment methods
+   */
+  getPaymentMethods: async () => {
+    const response = await api.get('/payments/payment-methods/');
+    return response.data;
+  },
+
+  /**
+   * Add payment method
+   */
+  addPaymentMethod: async (paymentMethodId: string) => {
+    const response = await api.post('/payments/add-payment-method/', {
+      payment_method_id: paymentMethodId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Remove payment method
+   */
+  removePaymentMethod: async (paymentMethodId: string) => {
+    const response = await api.delete(`/payments/payment-methods/${paymentMethodId}/`);
+    return response.data;
+  },
+
+  /**
+   * Set default payment method
+   */
+  setDefaultPaymentMethod: async (paymentMethodId: string) => {
+    const response = await api.post('/payments/set-default-payment-method/', {
+      payment_method_id: paymentMethodId,
+    });
+    return response.data;
   },
 };

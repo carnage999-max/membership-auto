@@ -5,6 +5,7 @@ import { Skeleton, SkeletonCard, SkeletonQuickAction } from '@/components/ui/ske
 import { QUICK_ACTIONS } from '@/constants';
 import { offerService } from '@/services/api/offer.service';
 import { vehicleService } from '@/services/api/vehicle.service';
+import { serviceService } from '@/services/api/service.service';
 import { useAuthStore } from '@/stores/auth.store';
 import { useVehicleStore } from '@/stores/vehicle.store';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +22,7 @@ import {
   Tag,
   Users,
 } from 'lucide-react-native';
-import { RefreshControl, ScrollView, Text, View, ActivityIndicator } from 'react-native';
+import { RefreshControl, ScrollView, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Map icon names to components
@@ -62,6 +63,20 @@ const DashboardScreen = () => {
     enabled: !!user,
   });
 
+  // Get active vehicle
+  const activeVehicle = vehicles.find((v) => v.id === activeVehicleId);
+
+  // Fetch service recommendations for active vehicle
+  const {
+    data: serviceRecommendations,
+    isLoading: servicesLoading,
+    refetch: refetchServices,
+  } = useQuery({
+    queryKey: ['service-recommendations', activeVehicleId],
+    queryFn: () => serviceService.getRecommendations(activeVehicleId!),
+    enabled: !!user && !!activeVehicleId,
+  });
+
   // Update local vehicle store when data is fetched
   React.useEffect(() => {
     if (vehiclesData) {
@@ -69,14 +84,18 @@ const DashboardScreen = () => {
     }
   }, [vehiclesData, setVehicles]);
 
-  const isRefreshing = vehiclesLoading || offersLoading;
+  const isRefreshing = vehiclesLoading || offersLoading || servicesLoading;
 
   const handleRefresh = () => {
     refetchVehicles();
     refetchOffers();
+    if (activeVehicleId) {
+      refetchServices();
+    }
   };
 
-  const activeVehicle = vehicles.find((v) => v.id === activeVehicleId);
+  // Get the next due service (first in the list)
+  const nextService = serviceRecommendations?.[0];
 
   const handleQuickAction = (action: (typeof QUICK_ACTIONS)[number]) => {
     router.push(action.route as any);
@@ -127,28 +146,54 @@ const DashboardScreen = () => {
         </View>
 
         {/* Membership Status Card */}
-        <Card className="mb-6" variant="elevated">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-xl font-semibold text-foreground">Membership Status</Text>
-            <View className="rounded-full bg-success/20 px-4 py-1.5">
-              <Text className="text-xs font-semibold text-success">Active</Text>
+        {user?.membershipPlan ? (
+          <Card className="mb-6" variant="elevated">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-xl font-semibold text-foreground">Membership Status</Text>
+              <View className={`rounded-full px-4 py-1.5 ${
+                user.membershipStatus === 'active' ? 'bg-success/20' : 'bg-error/20'
+              }`}>
+                <Text className={`text-xs font-semibold ${
+                  user.membershipStatus === 'active' ? 'text-success' : 'text-error'
+                }`}>
+                  {user.membershipStatus ? user.membershipStatus.charAt(0).toUpperCase() + user.membershipStatus.slice(1) : 'Unknown'}
+                </Text>
+              </View>
             </View>
-          </View>
-          <View className="gap-3">
-            <View className="flex-row items-center">
-              <CheckCircle2 size={18} color="#4caf50" />
-              <Text className="ml-3 text-sm text-textSecondary">
-                {user?.membershipPlan || 'Premium'} Plan • Renews Monthly
+            <View className="gap-3">
+              <View className="flex-row items-center">
+                <CheckCircle2 size={18} color="#4caf50" />
+                <Text className="ml-3 text-sm text-textSecondary">
+                  {user.membershipPlan} Plan • Renews Monthly
+                </Text>
+              </View>
+              {user.renewalDate && (
+                <View className="flex-row items-center">
+                  <Calendar size={18} color="#cba86e" />
+                  <Text className="ml-3 text-sm text-textSecondary">
+                    Next renewal: {new Date(user.renewalDate).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
+        ) : (
+          <Card className="mb-6" variant="elevated">
+            <View className="mb-4">
+              <Text className="text-xl font-semibold text-foreground mb-2">No Active Membership</Text>
+              <Text className="text-sm text-textSecondary">
+                Subscribe to a membership plan to unlock exclusive benefits and savings.
               </Text>
             </View>
-            <View className="flex-row items-center">
-              <Calendar size={18} color="#cba86e" />
-              <Text className="ml-3 text-sm text-textSecondary">
-                Next renewal: {user?.renewalDate ? new Date(user.renewalDate).toLocaleDateString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
-              </Text>
-            </View>
-          </View>
-        </Card>
+            <TouchableOpacity
+              onPress={() => router.push('/(authenticated)/plans')}
+              className="flex-row items-center justify-center rounded-xl bg-gold py-4"
+              activeOpacity={0.7}
+            >
+              <Text className="text-base font-semibold text-background">View Plans</Text>
+            </TouchableOpacity>
+          </Card>
+        )}
 
         {/* Active Vehicle Card */}
         {activeVehicle && (
@@ -221,28 +266,51 @@ const DashboardScreen = () => {
         </View>
 
         {/* Next Service Card */}
-        <Card className="mb-6">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-xl font-semibold text-foreground">Next Service</Text>
-            <AlertCircle size={22} color="#cba86e" />
-          </View>
-          <View>
-            <Text className="mb-3 text-base font-medium text-foreground">
-              Routine Maintenance
-            </Text>
-            <View className="flex-row items-center mb-4">
-              <Calendar size={18} color="#707070" />
-              <Text className="ml-3 text-sm text-textSecondary">
-                Recommended at 5,000 miles or 3 months
-              </Text>
+        {activeVehicle && nextService && (
+          <Card className="mb-6">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-xl font-semibold text-foreground">Next Service</Text>
+              <View className={`rounded-full px-3 py-1 ${
+                nextService.status === 'overdue' ? 'bg-error/20' :
+                nextService.status === 'due_soon' ? 'bg-warning/20' : 'bg-gold/20'
+              }`}>
+                <Text className={`text-xs font-semibold ${
+                  nextService.status === 'overdue' ? 'text-error' :
+                  nextService.status === 'due_soon' ? 'text-warning' : 'text-gold'
+                }`}>
+                  {nextService.status === 'overdue' ? 'Overdue' :
+                   nextService.status === 'due_soon' ? 'Due Soon' : 'Upcoming'}
+                </Text>
+              </View>
             </View>
-            <View className="rounded-lg bg-gold/10 p-4">
-              <Text className="text-sm font-medium text-gold">
-                Includes: Oil change, tire rotation, brake inspection
+            <View>
+              <Text className="mb-3 text-base font-medium text-foreground">
+                {nextService.serviceType?.name || 'Service'}
               </Text>
+              <View className="flex-row items-center mb-2">
+                <Gauge size={18} color="#707070" />
+                <Text className="ml-3 text-sm text-textSecondary">
+                  {nextService.nextDueMileage ? `Due at ${nextService.nextDueMileage.toLocaleString()} miles` : 'Mileage-based'}
+                </Text>
+              </View>
+              {nextService.nextDueDate && (
+                <View className="flex-row items-center mb-4">
+                  <Calendar size={18} color="#707070" />
+                  <Text className="ml-3 text-sm text-textSecondary">
+                    Due: {new Date(nextService.nextDueDate).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+              {nextService.serviceType?.description && (
+                <View className="rounded-lg bg-gold/10 p-4">
+                  <Text className="text-sm font-medium text-gold">
+                    {nextService.serviceType.description}
+                  </Text>
+                </View>
+              )}
             </View>
-          </View>
-        </Card>
+          </Card>
+        )}
       </View>
     </ScrollView>
   );

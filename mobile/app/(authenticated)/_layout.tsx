@@ -167,6 +167,15 @@ const AuthenticatedLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="contact"
+        options={{
+          href: null,
+          headerLeft: () => (
+            <HeaderWithBack title="Contact Us" onPress={() => router.back()} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="service-schedule"
         options={{
           href: null,

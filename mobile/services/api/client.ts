@@ -58,8 +58,13 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean; _suppressErrorToast?: boolean };
 
-    // If error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't try to refresh token for login/register/refresh endpoints
+    const isAuthEndpoint = originalRequest.url?.includes('/login') ||
+                          originalRequest.url?.includes('/register') ||
+                          originalRequest.url?.includes('/refresh');
+
+    // If error is 401 and we haven't retried yet, and it's not an auth endpoint
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // If already refreshing, queue this request to retry after refresh completes
         return new Promise((resolve, reject) => {

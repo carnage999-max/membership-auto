@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import useToastStore from '@/utils/stores/toast-store';
+import { showToast } from '@/utils/toast';
 
 const ParkingScreen = () => {
   const insets = useSafeAreaInsets();
@@ -32,7 +32,6 @@ const ParkingScreen = () => {
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(
     null
   );
-  const { setToast } = useToastStore();
   const queryClient = useQueryClient();
 
   const {
@@ -47,34 +46,24 @@ const ParkingScreen = () => {
   const saveParkingMutation = useMutation({
     mutationFn: parkingService.save,
     onSuccess: () => {
-      setToast({
-        type: 'success',
-        message: 'Parking spot saved successfully!',
-      });
+      showToast('success', 'Parking spot saved successfully!');
       queryClient.invalidateQueries({ queryKey: ['parking'] });
     },
-    onError: () => {
-      setToast({
-        type: 'error',
-        message: 'Failed to save parking spot',
-      });
+    onError: (error: any) => {
+      console.error('Save parking error:', error);
+      showToast('error', error.response?.data?.message || 'Failed to save parking spot');
     },
   });
 
   const clearParkingMutation = useMutation({
     mutationFn: parkingService.clearActive,
     onSuccess: () => {
-      setToast({
-        type: 'success',
-        message: 'Parking spot cleared',
-      });
+      showToast('success', 'Parking spot cleared');
       queryClient.invalidateQueries({ queryKey: ['parking'] });
     },
-    onError: () => {
-      setToast({
-        type: 'error',
-        message: 'Failed to clear parking spot',
-      });
+    onError: (error: any) => {
+      console.error('Clear parking error:', error);
+      showToast('error', 'Failed to clear parking spot');
     },
   });
 
@@ -89,13 +78,11 @@ const ParkingScreen = () => {
         const location = await Location.getCurrentPositionAsync({});
         setCurrentLocation(location);
       } else {
-        setToast({
-          type: 'error',
-          message: 'Location permission denied',
-        });
+        showToast('error', 'Location permission denied');
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
+      showToast('error', 'Failed to get location');
     }
   };
 
@@ -108,10 +95,7 @@ const ParkingScreen = () => {
 
   const handleSaveCurrentLocation = async () => {
     if (!currentLocation) {
-      setToast({
-        type: 'error',
-        message: 'Unable to get current location',
-      });
+      showToast('error', 'Unable to get current location');
       return;
     }
 
@@ -132,6 +116,7 @@ const ParkingScreen = () => {
       });
     } catch (error) {
       console.error('Error saving parking spot:', error);
+      showToast('error', 'Failed to save parking spot');
     }
   };
 

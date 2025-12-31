@@ -27,7 +27,9 @@ export const parkingService = {
    * Get all saved parking spots
    */
   getAll: async () => {
-    const response = await api.get<ParkingSpot[]>('/parking/');
+    const response = await api.get<ParkingSpot[]>('/parking/', {
+      suppressErrorToast: true,
+    });
     return response.data;
   },
 
@@ -43,8 +45,18 @@ export const parkingService = {
    * Get current active parking spot
    */
   getActive: async () => {
-    const response = await api.get<ParkingSpot | null>('/parking/active/');
-    return response.data;
+    try {
+      const response = await api.get<ParkingSpot>('/parking/active/', {
+        suppressErrorToast: true,
+      });
+      return response.data;
+    } catch (error: any) {
+      // Return null if no active spot (404 error)
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   /**

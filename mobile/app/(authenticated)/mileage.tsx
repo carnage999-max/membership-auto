@@ -344,9 +344,9 @@ const MileageScreen = () => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View className="space-y-4 mb-6">
+              <View className="mb-6">
                 {/* Odometer */}
-                <View>
+                <View className="mb-4">
                   <Text className="text-sm font-medium text-foreground mb-2">
                     Odometer Reading *
                   </Text>
@@ -361,7 +361,7 @@ const MileageScreen = () => {
                 </View>
 
                 {/* Gallons */}
-                <View>
+                <View className="mb-4">
                   <Text className="text-sm font-medium text-foreground mb-2">Gallons *</Text>
                   <TextInput
                     className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
@@ -374,7 +374,7 @@ const MileageScreen = () => {
                 </View>
 
                 {/* Price per Gallon */}
-                <View>
+                <View className="mb-4">
                   <Text className="text-sm font-medium text-foreground mb-2">
                     Price per Gallon *
                   </Text>
@@ -390,7 +390,7 @@ const MileageScreen = () => {
 
                 {/* Total Cost (Calculated) */}
                 {gallons && pricePerGallon && (
-                  <Card className="bg-gold/10 border-gold">
+                  <Card className="bg-gold/10 border-gold mb-4">
                     <View className="flex-row justify-between items-center">
                       <Text className="text-sm font-medium text-foreground">Total Cost</Text>
                       <Text className="text-xl font-bold text-gold">
@@ -401,7 +401,7 @@ const MileageScreen = () => {
                 )}
 
                 {/* Location */}
-                <View>
+                <View className="mb-4">
                   <Text className="text-sm font-medium text-foreground mb-2">
                     Location (Optional)
                   </Text>
@@ -415,7 +415,7 @@ const MileageScreen = () => {
                 </View>
 
                 {/* Notes */}
-                <View>
+                <View className="mb-4">
                   <Text className="text-sm font-medium text-foreground mb-2">Notes (Optional)</Text>
                   <TextInput
                     className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"

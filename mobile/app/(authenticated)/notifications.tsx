@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +7,13 @@ import { Card } from '@/components/ui/card';
 import { userService } from '@/services/api/user.service';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { showToast } from '@/utils/toast';
+import { useAuthStore } from '@/stores/auth.store';
 
 const NotificationSettingsScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { user, refreshProfile } = useAuthStore();
 
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -23,25 +25,34 @@ const NotificationSettingsScreen = () => {
     serviceReminders: true,
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  // Load settings from user profile
+  useEffect(() => {
+    if (user?.settings) {
+      setSettings((prev) => ({ ...prev, ...user.settings }));
+    }
+  }, [user?.settings]);
 
   const handleToggle = (key: keyof typeof settings) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      // In a real implementation, you'd call an API endpoint to save these settings
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  const updateSettingsMutation = useMutation({
+    mutationFn: (settings: typeof settings) =>
+      userService.updateNotificationSettings({ settings }),
+    onSuccess: async () => {
       showToast('success', 'Notification settings saved');
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      router.back();
-    } catch (error) {
+      // Refresh user profile to get updated settings
+      await refreshProfile();
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      router.push('/(authenticated)/profile');
+    },
+    onError: () => {
       showToast('error', 'Failed to save settings');
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  const handleSave = () => {
+    updateSettingsMutation.mutate(settings);
   };
 
   const NotificationToggle = ({
@@ -78,15 +89,6 @@ const NotificationSettingsScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <ChevronLeft size={24} color="#cba86e" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-foreground">Notifications</Text>
-        <View className="w-10" />
-      </View>
-
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
           {/* Notification Channels */}
@@ -159,11 +161,11 @@ const NotificationSettingsScreen = () => {
           <View className="gap-3">
             <TouchableOpacity
               onPress={handleSave}
-              disabled={isLoading}
+              disabled={updateSettingsMutation.isPending}
               className="flex-row items-center justify-center rounded-xl bg-gold py-4"
               activeOpacity={0.7}
             >
-              {isLoading ? (
+              {updateSettingsMutation.isPending ? (
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <Text className="text-base font-semibold text-white">Save Preferences</Text>
@@ -172,7 +174,7 @@ const NotificationSettingsScreen = () => {
 
             <TouchableOpacity
               onPress={() => router.back()}
-              disabled={isLoading}
+              disabled={updateSettingsMutation.isPending}
               className="flex-row items-center justify-center rounded-xl border-2 border-border bg-transparent py-4"
               activeOpacity={0.7}
             >

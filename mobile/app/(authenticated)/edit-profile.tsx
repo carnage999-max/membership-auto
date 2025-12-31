@@ -12,9 +12,9 @@ import { showToast } from '@/utils/toast';
 const EditProfileScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const { user, refreshProfile } = useAuthStore();
   const queryClient = useQueryClient();
-  
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -23,10 +23,12 @@ const EditProfileScreen = () => {
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: typeof formData) => userService.updateProfile(data),
-    onSuccess: () => {
+    onSuccess: async () => {
       showToast('success', 'Profile updated successfully');
+      // Refresh user profile from backend to get updated data
+      await refreshProfile();
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      router.back();
+      router.push('/(authenticated)/profile');
     },
     onError: () => {
       showToast('error', 'Failed to update profile');
@@ -51,15 +53,6 @@ const EditProfileScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
-        <TouchableOpacity onPress={handleCancel} className="p-2">
-          <ChevronLeft size={24} color="#cba86e" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-foreground">Edit Profile</Text>
-        <View className="w-10" />
-      </View>
-
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
           {/* Name Field */}
