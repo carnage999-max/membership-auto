@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function DataDeletionPage() {
   const [email, setEmail] = useState('');
   const [reason, setReason] = useState('');
