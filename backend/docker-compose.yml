@@ -29,7 +29,7 @@ services:
 
   web:
     build: .
-    command: gunicorn membership_auto.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+    command: daphne -b 0.0.0.0 -p 8000 membership_auto.asgi:application
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
