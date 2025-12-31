@@ -5,6 +5,7 @@ from .models import ParkingSpot
 class ParkingSpotSerializer(serializers.ModelSerializer):
     vehicle_info = serializers.SerializerMethodField()
     time_parked = serializers.SerializerMethodField()
+    is_active = serializers.BooleanField(source='active', required=False)
 
     class Meta:
         model = ParkingSpot
@@ -21,7 +22,7 @@ class ParkingSpotSerializer(serializers.ModelSerializer):
             "notes",
             "parked_at",
             "timer_expires_at",
-            "active",
+            "is_active",
             "time_parked",
             "created_at",
             "updated_at",

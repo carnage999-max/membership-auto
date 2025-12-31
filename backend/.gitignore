@@ -50,3 +50,5 @@ htmlcov/
 
 # Docker
 .dockerignore
+
+firebase-service-account.json

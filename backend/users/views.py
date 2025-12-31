@@ -465,3 +465,83 @@ def toggle_auto_renew(request):
         return Response(
             {"error": "No membership found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def request_data_deletion(request):
+    """
+    Handle data deletion requests for GDPR/CCPA compliance
+    """
+    email = request.data.get("email")
+    reason = request.data.get("reason", "")
+
+    if not email:
+        return Response(
+            {"error": "Email is required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        user = User.objects.get(email=email)
+        
+        # Log the deletion request (you can create a DeletionRequest model if needed)
+        # For now, we'll send an email notification to admin
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        send_mail(
+            subject=f"Data Deletion Request - {email}",
+            message=f"""
+Data Deletion Request Received
+
+Email: {email}
+User ID: {user.id}
+Name: {user.name or 'N/A'}
+Reason: {reason or 'Not provided'}
+
+Please process this request within 30 days as per GDPR/CCPA compliance.
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[settings.ADMIN_EMAIL if hasattr(settings, 'ADMIN_EMAIL') else 'privacy@membershipauto.com'],
+            fail_silently=True,
+        )
+        
+        # Send confirmation email to user
+        send_mail(
+            subject="Data Deletion Request Received - Membership Auto",
+            message=f"""
+Hello {user.name or 'User'},
+
+We have received your request to delete your personal data from Membership Auto.
+
+Our privacy team will process your request within 30 days in accordance with applicable data protection laws (GDPR, CCPA, etc.).
+
+You will receive another email once your data has been permanently deleted.
+
+If you did not submit this request, please contact us immediately at privacy@membershipauto.com.
+
+Best regards,
+The Membership Auto Team
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=True,
+        )
+        
+        return Response(
+            {"message": "Deletion request submitted successfully. You will receive a confirmation email shortly."},
+            status=status.HTTP_200_OK,
+        )
+    
+    except User.DoesNotExist:
+        # Don't reveal whether user exists for privacy reasons
+        return Response(
+            {"message": "Deletion request submitted successfully. You will receive a confirmation email shortly."},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        return Response(
+            {"error": "Failed to process deletion request"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

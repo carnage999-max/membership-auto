@@ -15,10 +15,33 @@ class ReferralMeView(APIView):
         user = request.user
         referrals_made = Referral.objects.filter(referrer_user=user)
 
+        # Calculate stats
+        successful_referrals = referrals_made.filter(status='active').count()
+        pending_referrals = referrals_made.filter(status='signed_up').count()
+
+        # Calculate total rewards (example: $10 per successful referral)
+        total_rewards = successful_referrals * 10.0
+
+        # Format referred users data
+        referred_users = []
+        for referral in referrals_made:
+            referred_users.append({
+                'id': str(referral.referred_user.id),
+                'name': referral.referred_user.name or referral.referred_user.email,
+                'email': referral.referred_user.email,
+                'status': referral.status,
+                'joined_date': referral.created_at.isoformat(),
+                'reward_earned': 10.0 if referral.status == 'active' else 0.0,
+            })
+
         referral_info = {
-            "code": user.referral_code,
-            "link": f"https://membershipauto.com/r/{user.referral_code}",
-            "referrals": ReferralSerializer(referrals_made, many=True).data,
+            "referral_code": user.referral_code,
+            "referral_link": f"https://membershipauto.com/r/{user.referral_code}",
+            "total_referrals": referrals_made.count(),
+            "successful_referrals": successful_referrals,
+            "pending_referrals": pending_referrals,
+            "total_rewards": total_rewards,
+            "referred_users": referred_users,
         }
 
         return Response(referral_info, status=status.HTTP_200_OK)
