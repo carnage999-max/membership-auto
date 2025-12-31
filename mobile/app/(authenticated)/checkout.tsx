@@ -45,6 +45,8 @@ const CheckoutScreen = () => {
     mutationFn: async () => {
       if (!selectedPlan) throw new Error('Plan not found');
 
+      console.log('🔄 Starting subscription for plan:', selectedPlan.id, selectedPlan.name);
+
       // In a real implementation, you'd use Stripe Elements or SDK
       // to tokenize the card before sending to backend
       // For now, we'll simulate the payment
@@ -52,9 +54,24 @@ const CheckoutScreen = () => {
       // Create a mock payment method ID (in production, use Stripe SDK)
       const mockPaymentMethodId = `pm_${Math.random().toString(36).substring(7)}`;
 
-      return await paymentService.subscribe(selectedPlan.id, mockPaymentMethodId);
+      console.log('📤 Calling subscribe API with:', {
+        plan_id: selectedPlan.id,
+        payment_method_id: mockPaymentMethodId
+      });
+
+      try {
+        const result = await paymentService.subscribe(selectedPlan.id, mockPaymentMethodId);
+        console.log('✅ Subscribe API success:', result);
+        return result;
+      } catch (err: any) {
+        console.error('❌ Subscribe API error:', err);
+        console.error('Error response:', err.response?.data);
+        console.error('Error status:', err.response?.status);
+        throw err;
+      }
     },
     onSuccess: async () => {
+      console.log('✅ Subscription successful, refreshing profile...');
       showToast('success', 'Subscription activated successfully!');
 
       // Refresh user profile to get updated membership status
@@ -65,10 +82,14 @@ const CheckoutScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
       // Navigate to home with success message
+      console.log('🏠 Navigating to home...');
       router.replace('/(authenticated)' as any);
     },
     onError: (error: any) => {
-      showToast('error', error.response?.data?.message || 'Payment failed. Please try again.');
+      console.error('❌ Subscription mutation error:', error);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Payment failed. Please try again.';
+      console.error('Error message:', errorMsg);
+      showToast('error', errorMsg);
     },
   });
 

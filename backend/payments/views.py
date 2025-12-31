@@ -360,20 +360,32 @@ def subscribe(request):
         
         user = request.user
         logger.info(f"Creating subscription for user {user.id}, plan {plan.id}")
-        
-        # Create or update membership
-        membership, created = Membership.objects.update_or_create(
-            user=user,
-            defaults={
-                "plan": plan,
-                "status": "active",
-                "started_at": timezone.now(),
-                "next_billing_at": timezone.now() + timedelta(days=30),
-            },
-        )
-        
-        action = "created" if created else "updated"
-        logger.info(f"Membership {action} for user {user.email}: {plan.name}")
+
+        # Get or create active membership for user
+        try:
+            membership = Membership.objects.filter(user=user, status='active').first()
+            if membership:
+                # Update existing membership
+                membership.plan = plan
+                membership.started_at = timezone.now()
+                membership.next_billing_at = timezone.now() + timedelta(days=30)
+                membership.save()
+                created = False
+                logger.info(f"Updated existing membership for user {user.email}: {plan.name}")
+            else:
+                # Create new membership
+                membership = Membership.objects.create(
+                    user=user,
+                    plan=plan,
+                    status="active",
+                    started_at=timezone.now(),
+                    next_billing_at=timezone.now() + timedelta(days=30),
+                )
+                created = True
+                logger.info(f"Created new membership for user {user.email}: {plan.name}")
+        except Exception as db_error:
+            logger.error(f"Database error: {str(db_error)}", exc_info=True)
+            raise
         
         return Response(
             {
