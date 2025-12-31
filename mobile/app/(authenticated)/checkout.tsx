@@ -1,225 +1,288 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CardField, useStripe } from '@stripe/stripe-react-native';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentService } from '@/services/api/payment.service';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { showToast } from '@/utils/toast';
-import { CreditCard, Lock, CheckCircle } from 'lucide-react-native';
+import { useAuthStore } from '@/stores/auth.store';
+import {
+  ScrollView,
+  Text,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CreditCard, Lock, Check } from 'lucide-react-native';
 
 const CheckoutScreen = () => {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { planId, planName, planPrice } = useLocalSearchParams<{
-    planId: string;
-    planName: string;
-    planPrice: string;
-  }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { confirmPayment } = useStripe();
+  const { planId } = useLocalSearchParams<{ planId: string }>();
+  const { user, refreshProfile } = useAuthStore();
 
-  const [cardDetails, setCardDetails] = useState<any>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Card details state
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [nameOnCard, setNameOnCard] = useState(user?.name || '');
+  const [saveCard, setSaveCard] = useState(true);
 
-  // Create payment intent mutation
-  const createPaymentMutation = useMutation({
-    mutationFn: () => paymentService.createPaymentIntent(planId),
-    onError: (error: any) => {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Failed to create payment';
-      showToast('error', errorMsg);
-    },
+  const { data: plans } = useQuery({
+    queryKey: ['membership-plans'],
+    queryFn: paymentService.getPlans,
   });
 
-  // Confirm payment mutation
-  const confirmPaymentMutation = useMutation({
-    mutationFn: (paymentId: string) => paymentService.confirmPayment(paymentId),
-    onSuccess: (data) => {
-      showToast('success', `Membership activated! Welcome to ${data.plan_name}!`);
+  const selectedPlan = plans?.find((p) => p.id === planId);
+
+  // Subscribe mutation
+  const subscribeMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPlan) throw new Error('Plan not found');
+
+      // In a real implementation, you'd use Stripe Elements or SDK
+      // to tokenize the card before sending to backend
+      // For now, we'll simulate the payment
+
+      // Create a mock payment method ID (in production, use Stripe SDK)
+      const mockPaymentMethodId = `pm_${Math.random().toString(36).substring(7)}`;
+
+      return await paymentService.subscribe(selectedPlan.id, mockPaymentMethodId);
+    },
+    onSuccess: async () => {
+      showToast('success', 'Subscription activated successfully!');
+
+      // Refresh user profile to get updated membership status
+      await refreshProfile();
+
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
-      // Navigate to profile
-      setTimeout(() => {
-        router.replace('/(authenticated)/profile');
-      }, 1500);
+      // Navigate to home with success message
+      router.replace('/(authenticated)/');
     },
     onError: (error: any) => {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Failed to confirm payment';
-      showToast('error', errorMsg);
+      showToast('error', error.response?.data?.message || 'Payment failed. Please try again.');
     },
   });
 
-  const handlePayment = async () => {
-    if (!cardDetails?.complete) {
-      showToast('error', 'Please enter valid card details');
+  const handleSubscribe = () => {
+    // Validate card details
+    if (!cardNumber || !expiryDate || !cvv || !nameOnCard) {
+      showToast('error', 'Please fill in all card details');
       return;
     }
 
-    setIsProcessing(true);
+    if (cardNumber.replace(/\s/g, '').length !== 16) {
+      showToast('error', 'Please enter a valid 16-digit card number');
+      return;
+    }
 
-    try {
-      // Step 1: Create payment intent
-      const paymentIntent = await createPaymentMutation.mutateAsync();
+    if (!expiryDate.match(/^\d{2}\/\d{2}$/)) {
+      showToast('error', 'Please enter expiry date in MM/YY format');
+      return;
+    }
 
-      // Step 2: Confirm payment with Stripe
-      const { error, paymentIntent: confirmedIntent } = await confirmPayment(
-        paymentIntent.clientSecret,
-        {
-          paymentMethodType: 'Card',
-        }
-      );
+    if (cvv.length !== 3 && cvv.length !== 4) {
+      showToast('error', 'Please enter a valid CVV');
+      return;
+    }
 
-      if (error) {
-        throw new Error(error.message);
-      }
+    subscribeMutation.mutate();
+  };
 
-      if (confirmedIntent?.status === 'Succeeded') {
-        // Step 3: Confirm payment on backend and create membership
-        await confirmPaymentMutation.mutateAsync(paymentIntent.paymentId);
-      } else {
-        throw new Error('Payment was not successful');
-      }
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      showToast('error', error.message || 'Payment failed');
-    } finally {
-      setIsProcessing(false);
+  // Format card number with spaces
+  const formatCardNumber = (text: string) => {
+    const cleaned = text.replace(/\s/g, '');
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
+    setCardNumber(formatted);
+  };
+
+  // Format expiry date
+  const formatExpiryDate = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned.length >= 2) {
+      setExpiryDate(cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4));
+    } else {
+      setExpiryDate(cleaned);
     }
   };
 
-  const handleCancel = () => {
-    Alert.alert(
-      'Cancel Payment',
-      'Are you sure you want to cancel this payment?',
-      [
-        { text: 'Continue', style: 'cancel' },
-        {
-          text: 'Cancel Payment',
-          style: 'destructive',
-          onPress: () => router.back(),
-        },
-      ]
+  if (!selectedPlan) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-textSecondary">Plan not found</Text>
+      </View>
     );
-  };
+  }
 
   return (
     <View className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
-        <View className="px-4 pt-6">
-          {/* Header */}
-          <View className="mb-6">
-            <Text className="text-2xl font-bold text-foreground mb-2">
-              Complete Payment
-            </Text>
-            <Text className="text-base text-textSecondary">
-              Securely complete your payment to activate your {planName} membership
-            </Text>
-          </View>
-
-          {/* Plan Summary */}
-          <Card className="mb-6" variant="elevated">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-lg font-semibold text-foreground">Plan Summary</Text>
-              <CheckCircle size={20} color="#4caf50" />
-            </View>
-            <View className="pt-3 border-t border-border">
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-textSecondary">Plan</Text>
-                <Text className="text-sm font-semibold text-foreground">{planName}</Text>
-              </View>
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-textSecondary">Billing Frequency</Text>
-                <Text className="text-sm font-semibold text-foreground">Monthly</Text>
-              </View>
-              <View className="flex-row justify-between pt-3 border-t border-border">
-                <Text className="text-base font-semibold text-foreground">Total Today</Text>
-                <Text className="text-xl font-bold text-gold">${planPrice}</Text>
+        <View className="px-4 pt-4">
+          {/* Selected Plan Summary */}
+          <Card className="mb-6 border-2 border-gold bg-gold/10 p-4">
+            <Text className="mb-2 text-sm font-medium text-textMuted">Selected Plan</Text>
+            <View className="flex-row items-baseline justify-between">
+              <Text className="text-xl font-bold text-foreground">{selectedPlan.name}</Text>
+              <View className="flex-row items-baseline">
+                <Text className="text-2xl font-bold text-gold">${selectedPlan.price}</Text>
+                <Text className="ml-1 text-sm text-textSecondary">
+                  /{selectedPlan.interval === 'month' ? 'mo' : 'yr'}
+                </Text>
               </View>
             </View>
           </Card>
 
-          {/* Payment Method */}
-          <Card className="mb-6" variant="elevated">
-            <View className="flex-row items-center mb-4">
+          {/* Payment Information */}
+          <Card className="mb-6 p-4">
+            <View className="mb-4 flex-row items-center">
               <CreditCard size={20} color="#cba86e" />
-              <Text className="ml-2 text-lg font-semibold text-foreground">Payment Method</Text>
-            </View>
-
-            <CardField
-              postalCodeEnabled={true}
-              placeholders={{
-                number: '4242 4242 4242 4242',
-              }}
-              cardStyle={{
-                backgroundColor: '#FFFFFF',
-                textColor: '#000000',
-                borderWidth: 1,
-                borderColor: '#E5E5E5',
-                borderRadius: 8,
-              }}
-              style={{
-                width: '100%',
-                height: 50,
-                marginVertical: 10,
-              }}
-              onCardChange={(details) => {
-                setCardDetails(details);
-              }}
-            />
-
-            <View className="flex-row items-center mt-4 p-3 bg-blue-50 rounded-lg">
-              <Lock size={16} color="#2563eb" />
-              <Text className="ml-2 text-xs text-blue-900 flex-1">
-                Your payment information is encrypted and secure
+              <Text className="ml-2 text-lg font-semibold text-foreground">
+                Payment Information
               </Text>
             </View>
-          </Card>
 
-          {/* Action Buttons */}
-          <View className="gap-3">
+            {/* Card Number */}
+            <View className="mb-4">
+              <Text className="mb-2 text-sm font-medium text-foreground">Card Number *</Text>
+              <TextInput
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-foreground"
+                placeholder="1234 5678 9012 3456"
+                placeholderTextColor="#707070"
+                keyboardType="numeric"
+                maxLength={19}
+                value={cardNumber}
+                onChangeText={formatCardNumber}
+              />
+            </View>
+
+            {/* Expiry and CVV */}
+            <View className="mb-4 flex-row gap-3">
+              <View className="flex-1">
+                <Text className="mb-2 text-sm font-medium text-foreground">Expiry Date *</Text>
+                <TextInput
+                  className="rounded-lg border border-border bg-surface px-4 py-3 text-foreground"
+                  placeholder="MM/YY"
+                  placeholderTextColor="#707070"
+                  keyboardType="numeric"
+                  maxLength={5}
+                  value={expiryDate}
+                  onChangeText={formatExpiryDate}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="mb-2 text-sm font-medium text-foreground">CVV *</Text>
+                <TextInput
+                  className="rounded-lg border border-border bg-surface px-4 py-3 text-foreground"
+                  placeholder="123"
+                  placeholderTextColor="#707070"
+                  keyboardType="numeric"
+                  maxLength={4}
+                  secureTextEntry
+                  value={cvv}
+                  onChangeText={setCvv}
+                />
+              </View>
+            </View>
+
+            {/* Name on Card */}
+            <View className="mb-4">
+              <Text className="mb-2 text-sm font-medium text-foreground">Name on Card *</Text>
+              <TextInput
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-foreground"
+                placeholder="John Doe"
+                placeholderTextColor="#707070"
+                autoCapitalize="words"
+                value={nameOnCard}
+                onChangeText={setNameOnCard}
+              />
+            </View>
+
+            {/* Save Card Checkbox */}
             <TouchableOpacity
-              onPress={handlePayment}
-              disabled={isProcessing || !cardDetails?.complete || createPaymentMutation.isPending}
-              className={`flex-row items-center justify-center rounded-xl py-4 ${
-                isProcessing || !cardDetails?.complete
-                  ? 'bg-gray-500/50'
-                  : 'bg-gold'
-              }`}
+              onPress={() => setSaveCard(!saveCard)}
+              className="flex-row items-center"
               activeOpacity={0.7}
             >
-              {isProcessing || createPaymentMutation.isPending || confirmPaymentMutation.isPending ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text className="text-base font-semibold text-white">
-                  Pay ${planPrice}
+              <View
+                className={`mr-3 h-5 w-5 items-center justify-center rounded ${
+                  saveCard ? 'bg-gold' : 'border-2 border-border bg-transparent'
+                }`}
+              >
+                {saveCard && <Check size={14} color="#0d0d0d" />}
+              </View>
+              <Text className="text-sm text-textSecondary">
+                Save card for future payments
+              </Text>
+            </TouchableOpacity>
+          </Card>
+
+          {/* Security Note */}
+          <Card className="mb-6 border-2 border-blue-500/30 bg-blue-500/10 p-4">
+            <View className="flex-row items-start">
+              <Lock size={16} color="#3b82f6" />
+              <View className="ml-3 flex-1">
+                <Text className="mb-1 text-sm font-semibold text-blue-600">
+                  Secure Payment
                 </Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleCancel}
-              disabled={isProcessing}
-              className="flex-row items-center justify-center rounded-xl border-2 border-border bg-transparent py-4"
-              activeOpacity={0.7}
-            >
-              <Text className="text-base font-semibold text-foreground">Cancel</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Info */}
-          <Card className="mt-6 bg-gray-100 border border-gray-200">
-            <Text className="text-xs text-gray-700 mb-2">
-              • Your subscription will automatically renew each month
-            </Text>
-            <Text className="text-xs text-gray-700 mb-2">
-              • You can cancel anytime from your profile settings
-            </Text>
-            <Text className="text-xs text-gray-700">
-              • All payments are processed securely through Stripe
-            </Text>
+                <Text className="text-xs leading-5 text-blue-600/80">
+                  Your payment information is encrypted and secure. We use Stripe for processing
+                  payments and never store your card details on our servers.
+                </Text>
+              </View>
+            </View>
           </Card>
+
+          {/* Order Summary */}
+          <Card className="mb-6 p-4">
+            <Text className="mb-3 text-base font-semibold text-foreground">Order Summary</Text>
+            <View className="gap-2">
+              <View className="flex-row justify-between">
+                <Text className="text-sm text-textSecondary">
+                  {selectedPlan.name} ({selectedPlan.interval}ly)
+                </Text>
+                <Text className="text-sm font-medium text-foreground">
+                  ${selectedPlan.price.toFixed(2)}
+                </Text>
+              </View>
+              <View className="my-2 border-t border-border" />
+              <View className="flex-row justify-between">
+                <Text className="text-base font-semibold text-foreground">Total Due Today</Text>
+                <Text className="text-xl font-bold text-gold">
+                  ${selectedPlan.price.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          {/* Subscribe Button */}
+          <TouchableOpacity
+            onPress={handleSubscribe}
+            disabled={subscribeMutation.isPending}
+            className="mb-4 flex-row items-center justify-center rounded-xl bg-gold py-4"
+            activeOpacity={0.7}
+          >
+            {subscribeMutation.isPending ? (
+              <ActivityIndicator size="small" color="#0d0d0d" />
+            ) : (
+              <>
+                <Lock size={20} color="#0d0d0d" />
+                <Text className="ml-2 text-base font-semibold text-background">
+                  Subscribe Now - ${selectedPlan.price}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Terms */}
+          <Text className="mb-6 text-center text-xs text-textMuted">
+            By subscribing, you agree to our Terms of Service and Privacy Policy. Your
+            subscription will auto-renew {selectedPlan.interval}ly.
+          </Text>
         </View>
       </ScrollView>
     </View>

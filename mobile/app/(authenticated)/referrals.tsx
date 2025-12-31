@@ -23,12 +23,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
-import useToastStore from '@/utils/stores/toast-store';
+import { showToast } from '@/utils/toast';
 
 const ReferralsScreen = () => {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
-  const { setToast } = useToastStore();
 
   const {
     data: referralData,
@@ -37,7 +36,11 @@ const ReferralsScreen = () => {
     refetch,
   } = useQuery({
     queryKey: ['referrals'],
-    queryFn: referralService.getMyReferrals,
+    queryFn: async () => {
+      const data = await referralService.getMyReferrals();
+      console.log('Referral data received:', JSON.stringify(data, null, 2));
+      return data;
+    },
   });
 
   const onRefresh = async () => {
@@ -49,33 +52,38 @@ const ReferralsScreen = () => {
   const handleCopyCode = async () => {
     if (referralData?.referral_code) {
       await Clipboard.setStringAsync(referralData.referral_code);
-      setToast({
-        type: 'success',
-        message: 'Referral code copied to clipboard!',
-      });
+      showToast('success', 'Referral code copied to clipboard!');
+    } else {
+      showToast('error', 'No referral code available');
     }
   };
 
   const handleCopyLink = async () => {
     if (referralData?.referral_link) {
       await Clipboard.setStringAsync(referralData.referral_link);
-      setToast({
-        type: 'success',
-        message: 'Referral link copied to clipboard!',
-      });
+      showToast('success', 'Referral link copied to clipboard!');
+    } else {
+      showToast('error', 'No referral link available');
     }
   };
 
   const handleShare = async () => {
     if (referralData?.referral_link && referralData?.referral_code) {
       try {
-        await Share.share({
+        const result = await Share.share({
           message: `Join Membership Auto and get exclusive benefits! Use my referral code: ${referralData.referral_code}\n\n${referralData.referral_link}`,
           title: 'Join Membership Auto',
         });
+
+        if (result.action === Share.sharedAction) {
+          showToast('success', 'Shared successfully!');
+        }
       } catch (error) {
         console.error('Error sharing:', error);
+        showToast('error', 'Failed to share');
       }
+    } else {
+      showToast('error', 'No referral information available');
     }
   };
 
@@ -130,7 +138,7 @@ const ReferralsScreen = () => {
               <View className="mb-4 flex-row items-center">
                 <DollarSign size={32} color="#cba86e" />
                 <Text className="ml-2 text-3xl font-bold text-gold">
-                  ${referralData.total_rewards.toFixed(2)}
+                  ${(referralData.total_rewards ?? 0).toFixed(2)}
                 </Text>
               </View>
               <Text className="text-sm text-textSecondary">Total Rewards Earned</Text>
@@ -142,8 +150,8 @@ const ReferralsScreen = () => {
             <Card className="flex-1 p-4">
               <View className="items-center">
                 <Users size={24} color="#4caf50" />
-                <Text className="mt-2 text-2xl font-bold text-foreground">
-                  {referralData.successful_referrals}
+                <Text className="mt-2 text-2xl font-bold text-success">
+                  {referralData.successful_referrals ?? 0}
                 </Text>
                 <Text className="mt-1 text-center text-xs text-textSecondary">
                   Successful
@@ -153,8 +161,8 @@ const ReferralsScreen = () => {
             <Card className="flex-1 p-4">
               <View className="items-center">
                 <Clock size={24} color="#cba86e" />
-                <Text className="mt-2 text-2xl font-bold text-foreground">
-                  {referralData.pending_referrals}
+                <Text className="mt-2 text-2xl font-bold text-gold">
+                  {referralData.pending_referrals ?? 0}
                 </Text>
                 <Text className="mt-1 text-center text-xs text-textSecondary">Pending</Text>
               </View>
@@ -170,7 +178,7 @@ const ReferralsScreen = () => {
               </Text>
             </View>
 
-            <View className="mb-3 rounded-lg bg-surface p-4">
+            <View className="mb-3 rounded-lg border-2 border-gold bg-gold/10 p-4">
               <Text className="text-center text-2xl font-bold tracking-wider text-gold">
                 {referralData.referral_code}
               </Text>
@@ -258,7 +266,7 @@ const ReferralsScreen = () => {
                           </Text>
                         </View>
                         <Text className="text-sm font-semibold text-gold">
-                          +${user.reward_earned.toFixed(2)}
+                          +${(user.reward_earned ?? 0).toFixed(2)}
                         </Text>
                       </View>
                     </View>

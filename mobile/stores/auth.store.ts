@@ -18,6 +18,7 @@ interface AuthState {
   register: (data: SignUpData) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
   clearError: () => void;
 }
@@ -36,6 +37,14 @@ export const useAuthStore = create<AuthState>()(
 
           const { user, accessToken, refreshToken } = await authService.login(credentials);
 
+          if (!accessToken) {
+            throw new Error('No access token received from server');
+          }
+
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
+          }
+
           // Save tokens securely
           await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
           await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
@@ -45,7 +54,8 @@ export const useAuthStore = create<AuthState>()(
           // Navigate to authenticated area
           router.replace('/(authenticated)');
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+          console.error('Login error:', error);
+          const errorMessage = error.message || error.response?.data?.message || 'Login failed. Please try again.';
           set({ error: errorMessage, isLoading: false });
           throw error;
         }
@@ -143,6 +153,16 @@ export const useAuthStore = create<AuthState>()(
               set({ isAuthenticated: false, isLoading: false });
             }
           }
+        }
+      },
+
+      refreshProfile: async () => {
+        try {
+          const user = await authService.getProfile({ suppressErrorToast: true });
+          set({ user });
+        } catch (error) {
+          console.error('Profile refresh error:', error);
+          throw error;
         }
       },
 

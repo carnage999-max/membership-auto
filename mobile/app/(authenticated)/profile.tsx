@@ -18,15 +18,16 @@ import {
   XCircle,
   RefreshCw,
 } from 'lucide-react-native';
-import { Alert, ScrollView, Text, TouchableOpacity, View, Switch, ActivityIndicator } from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View, Switch, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, refreshProfile } = useAuthStore();
   const queryClient = useQueryClient();
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(user?.autoRenew ?? true);
+  const [refreshing, setRefreshing] = React.useState(false);
 
   // Update autoRenewEnabled when user data changes
   React.useEffect(() => {
@@ -36,12 +37,25 @@ const ProfileScreen = () => {
   }, [user?.autoRenew]);
 
   // Fetch savings data with error handling (suppresses error toast)
-  const { data: savings, isLoading: savingsLoading } = useQuery({
+  const { data: savings, isLoading: savingsLoading, refetch: refetchSavings } = useQuery({
     queryKey: ['savings'],
     queryFn: userService.getSavings,
     retry: false,
     throwOnError: false,
   });
+
+  // Handle pull-to-refresh
+  const handleRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshProfile(),
+        refetchSavings(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshProfile, refetchSavings]);
 
   // Toggle auto-renew mutation
   const toggleAutoRenewMutation = useMutation({
@@ -159,7 +173,16 @@ const ProfileScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#cba86e"
+          />
+        }
+      >
         <View className="px-4 pt-4">
           {/* Profile Header */}
           <Card className="mb-6 items-center py-6" variant="elevated">
@@ -184,31 +207,31 @@ const ProfileScreen = () => {
             ) : savings ? (
               <>
                 <Text className="text-3xl font-bold text-gold mb-4">
-                  ${savings.total_savings.toFixed(2)}
+                  ${(savings.total_savings ?? 0).toFixed(2)}
                 </Text>
                 <View className="space-y-2">
                   <View className="flex-row justify-between py-2 border-t border-border">
                     <Text className="text-sm text-textSecondary">Service Discounts</Text>
                     <Text className="text-sm font-medium text-foreground">
-                      ${savings.breakdown.service_discounts.toFixed(2)}
+                      ${(savings.breakdown?.service_discounts ?? 0).toFixed(2)}
                     </Text>
                   </View>
                   <View className="flex-row justify-between py-2 border-t border-border">
                     <Text className="text-sm text-textSecondary">Fuel Savings</Text>
                     <Text className="text-sm font-medium text-foreground">
-                      ${savings.breakdown.fuel_savings.toFixed(2)}
+                      ${(savings.breakdown?.fuel_savings ?? 0).toFixed(2)}
                     </Text>
                   </View>
                   <View className="flex-row justify-between py-2 border-t border-border">
                     <Text className="text-sm text-textSecondary">Referral Rewards</Text>
                     <Text className="text-sm font-medium text-foreground">
-                      ${savings.breakdown.referral_rewards.toFixed(2)}
+                      ${(savings.breakdown?.referral_rewards ?? 0).toFixed(2)}
                     </Text>
                   </View>
                   <View className="flex-row justify-between py-2 border-t border-border">
                     <Text className="text-sm text-textSecondary">Membership Perks</Text>
                     <Text className="text-sm font-medium text-foreground">
-                      ${savings.breakdown.membership_perks.toFixed(2)}
+                      ${(savings.breakdown?.membership_perks ?? 0).toFixed(2)}
                     </Text>
                   </View>
                 </View>

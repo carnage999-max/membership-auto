@@ -65,15 +65,6 @@ const ChangePasswordScreen = () => {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="flex-row items-center justify-between bg-surface px-4 py-4" style={{ paddingTop: insets.top }}>
-        <TouchableOpacity onPress={handleCancel} className="p-2">
-          <ChevronLeft size={24} color="#cba86e" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold text-foreground">Change Password</Text>
-        <View className="w-10" />
-      </View>
-
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
         <View className="px-4 pt-6">
           {/* Security Info Card */}
