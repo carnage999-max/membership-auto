@@ -331,3 +331,65 @@ def handle_payment_success(event_data):
 
     except Exception as e:
         logger.error(f"Error handling payment success: {str(e)}", exc_info=True)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def subscribe(request):
+    """
+    Simple subscribe endpoint for mobile app
+    Creates membership directly (mock payment for now)
+    """
+    try:
+        plan_id = request.data.get("plan_id")
+        payment_method_id = request.data.get("payment_method_id")
+        
+        if not plan_id:
+            return Response(
+                {"error": "plan_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            plan = Plan.objects.get(id=plan_id)
+        except Plan.DoesNotExist:
+            return Response(
+                {"error": "Plan not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        user = request.user
+        logger.info(f"Creating subscription for user {user.id}, plan {plan.id}")
+        
+        # Create or update membership
+        membership, created = Membership.objects.update_or_create(
+            user=user,
+            defaults={
+                "plan": plan,
+                "status": "active",
+                "started_at": timezone.now(),
+                "next_billing_at": timezone.now() + timedelta(days=30),
+            },
+        )
+        
+        action = "created" if created else "updated"
+        logger.info(f"Membership {action} for user {user.email}: {plan.name}")
+        
+        return Response(
+            {
+                "id": str(membership.id),
+                "planId": str(plan.id),
+                "status": "active",
+                "currentPeriodStart": membership.started_at.isoformat(),
+                "currentPeriodEnd": membership.next_billing_at.isoformat(),
+                "cancelAtPeriodEnd": False,
+            },
+            status=status.HTTP_200_OK,
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating subscription: {str(e)}", exc_info=True)
+        return Response(
+            {"error": "Failed to create subscription"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

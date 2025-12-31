@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { paymentService } from '@/services/api/payment.service';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -37,6 +37,9 @@ const CheckoutScreen = () => {
 
   const selectedPlan = plans?.find((p) => p.id === planId);
 
+  // Convert price to number if it's a string
+  const planPrice = selectedPlan ? Number(selectedPlan.price) : 0;
+
   // Subscribe mutation
   const subscribeMutation = useMutation({
     mutationFn: async () => {
@@ -62,7 +65,7 @@ const CheckoutScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
 
       // Navigate to home with success message
-      router.replace('/(authenticated)/');
+      router.replace('/(authenticated)' as any);
     },
     onError: (error: any) => {
       showToast('error', error.response?.data?.message || 'Payment failed. Please try again.');
@@ -129,7 +132,7 @@ const CheckoutScreen = () => {
             <View className="flex-row items-baseline justify-between">
               <Text className="text-xl font-bold text-foreground">{selectedPlan.name}</Text>
               <View className="flex-row items-baseline">
-                <Text className="text-2xl font-bold text-gold">${selectedPlan.price}</Text>
+                <Text className="text-2xl font-bold text-gold">${planPrice}</Text>
                 <Text className="ml-1 text-sm text-textSecondary">
                   /{selectedPlan.interval === 'month' ? 'mo' : 'yr'}
                 </Text>
@@ -246,14 +249,14 @@ const CheckoutScreen = () => {
                   {selectedPlan.name} ({selectedPlan.interval}ly)
                 </Text>
                 <Text className="text-sm font-medium text-foreground">
-                  ${selectedPlan.price.toFixed(2)}
+                  ${planPrice.toFixed(2)}
                 </Text>
               </View>
               <View className="my-2 border-t border-border" />
               <View className="flex-row justify-between">
                 <Text className="text-base font-semibold text-foreground">Total Due Today</Text>
                 <Text className="text-xl font-bold text-gold">
-                  ${selectedPlan.price.toFixed(2)}
+                  ${planPrice.toFixed(2)}
                 </Text>
               </View>
             </View>
@@ -272,7 +275,7 @@ const CheckoutScreen = () => {
               <>
                 <Lock size={20} color="#0d0d0d" />
                 <Text className="ml-2 text-base font-semibold text-background">
-                  Subscribe Now - ${selectedPlan.price}
+                  Subscribe Now - ${planPrice}
                 </Text>
               </>
             )}
