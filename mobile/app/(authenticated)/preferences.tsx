@@ -201,7 +201,7 @@ const PreferencesScreen = () => {
               icon={Shield}
               title="Data & Safety"
               subtitle="Your data security information"
-              onPress={() => handleLink('https://membershipauto.com/safety', 'Data & Safety')}
+              onPress={() => handleLink('https://www.membershipauto.com/privacy', 'Data & Safety')}
             />
           </Card>
 

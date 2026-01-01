@@ -64,6 +64,10 @@ export function usePushNotifications() {
       case 'service_due':
         router.push('/(authenticated)/service-schedule' as any);
         break;
+      case 'parking':
+      case 'parking_meter':
+        router.push('/(authenticated)/parking' as any);
+        break;
       case 'offer':
         router.push('/(authenticated)/offers' as any);
         break;

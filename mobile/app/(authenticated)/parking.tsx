@@ -10,6 +10,8 @@ import {
   Camera,
   Clock,
   Plus,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react-native';
 import {
   ScrollView,
@@ -21,9 +23,13 @@ import {
   Alert,
   Linking,
   Platform,
+  Modal,
+  TextInput,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { showToast } from '@/utils/toast';
 
 const ParkingScreen = () => {
@@ -32,6 +38,12 @@ const ParkingScreen = () => {
   const [currentLocation, setCurrentLocation] = useState<Location.LocationObject | null>(
     null
   );
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [parkingDetails, setParkingDetails] = useState({
+    locationName: '',
+    notes: '',
+    photoUri: '',
+  });
   const queryClient = useQueryClient();
 
   const {
@@ -50,8 +62,11 @@ const ParkingScreen = () => {
       queryClient.invalidateQueries({ queryKey: ['parking'] });
     },
     onError: (error: any) => {
-      console.error('Save parking error:', error);
-      showToast('error', error.response?.data?.message || 'Failed to save parking spot');
+      console.error('❌ Save parking error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Failed to save parking spot';
+      showToast('error', errorMsg);
     },
   });
 
@@ -99,6 +114,80 @@ const ParkingScreen = () => {
       return;
     }
 
+    // Show modal to collect additional details
+    setShowDetailsModal(true);
+  };
+
+  const convertImageToBase64 = async (uri: string): Promise<string> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw error;
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('error', 'Camera permission required');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5, // Reduced quality to keep base64 size manageable
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      try {
+        const base64 = await convertImageToBase64(result.assets[0].uri);
+        setParkingDetails({ ...parkingDetails, photoUri: base64 });
+      } catch (error) {
+        showToast('error', 'Failed to process image');
+      }
+    }
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showToast('error', 'Photo library permission required');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5, // Reduced quality to keep base64 size manageable
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      try {
+        const base64 = await convertImageToBase64(result.assets[0].uri);
+        setParkingDetails({ ...parkingDetails, photoUri: base64 });
+      } catch (error) {
+        showToast('error', 'Failed to process image');
+      }
+    }
+  };
+
+  const handleConfirmSave = async () => {
+    if (!currentLocation) {
+      showToast('error', 'Unable to get current location');
+      return;
+    }
+
     try {
       const address = await Location.reverseGeocodeAsync({
         latitude: currentLocation.coords.latitude,
@@ -109,11 +198,30 @@ const ParkingScreen = () => {
         ? `${address[0].street || ''} ${address[0].city || ''}, ${address[0].region || ''}`
         : undefined;
 
-      saveParkingMutation.mutate({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
+      // Round coordinates to 6 decimal places (backend constraint)
+      const parkingData: any = {
+        latitude: Number(currentLocation.coords.latitude.toFixed(6)),
+        longitude: Number(currentLocation.coords.longitude.toFixed(6)),
         address: addressString,
-      });
+      };
+
+      // Add optional fields if provided
+      if (parkingDetails.locationName) {
+        parkingData.location_name = parkingDetails.locationName;
+      }
+      if (parkingDetails.notes) {
+        parkingData.notes = parkingDetails.notes;
+      }
+      if (parkingDetails.photoUri) {
+        // Store base64 encoded image
+        // For production, consider uploading to S3/Cloudinary for better performance
+        parkingData.photos = [parkingDetails.photoUri];
+      }
+
+      console.log('📍 Saving parking with data:', parkingData);
+      saveParkingMutation.mutate(parkingData);
+      setShowDetailsModal(false);
+      setParkingDetails({ locationName: '', notes: '', photoUri: '' });
     } catch (error) {
       console.error('Error saving parking spot:', error);
       showToast('error', 'Failed to save parking spot');
@@ -228,13 +336,37 @@ const ParkingScreen = () => {
                 </View>
               )}
 
+              {/* Location Name */}
+              {activeSpot.location_name && (
+                <View className="mb-4 flex-row items-start">
+                  <Car size={16} color="#cba86e" className="mt-1" />
+                  <Text className="ml-2 flex-1 text-sm text-textSecondary">
+                    {activeSpot.location_name}
+                  </Text>
+                </View>
+              )}
+
               {/* Coordinates */}
               <View className="mb-4 rounded-lg bg-surface p-3">
                 <Text className="text-xs text-textMuted">Coordinates</Text>
                 <Text className="mt-1 text-sm font-mono text-foreground">
-                  {activeSpot.latitude.toFixed(6)}, {activeSpot.longitude.toFixed(6)}
+                  {Number(activeSpot.latitude).toFixed(6)}, {Number(activeSpot.longitude).toFixed(6)}
                 </Text>
               </View>
+
+              {/* Photo */}
+              {activeSpot.photos && activeSpot.photos.length > 0 && activeSpot.photos[0] && (
+                <View className="mb-4">
+                  <Text className="mb-2 text-xs text-textMuted">Photo</Text>
+                  <View className="h-48 w-full overflow-hidden rounded-lg border border-border">
+                    <Image
+                      source={{ uri: activeSpot.photos[0] }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                    />
+                  </View>
+                </View>
+              )}
 
               {/* Notes */}
               {activeSpot.notes && (
@@ -333,6 +465,168 @@ const ParkingScreen = () => {
           </Card>
         </View>
       </ScrollView>
+
+      {/* Parking Details Modal */}
+      <Modal
+        visible={showDetailsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDetailsModal(false)}
+      >
+        <View className="flex-1 bg-background">
+          <View className="flex-row items-center justify-between border-b border-border px-4 py-4">
+            <Text className="text-lg font-semibold text-foreground">Add Parking Details</Text>
+            <TouchableOpacity
+              onPress={() => setShowDetailsModal(false)}
+              className="h-8 w-8 items-center justify-center"
+            >
+              <X size={24} color="#707070" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView className="flex-1 px-4 pt-4">
+            {/* Location Name */}
+            <View className="mb-4">
+              <Text className="mb-2 text-sm font-medium text-foreground">
+                Location Name (Optional)
+              </Text>
+              <TextInput
+                value={parkingDetails.locationName}
+                onChangeText={(text) =>
+                  setParkingDetails({ ...parkingDetails, locationName: text })
+                }
+                placeholder="e.g., Level 3, Section B"
+                placeholderTextColor="#707070"
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-foreground"
+              />
+            </View>
+
+            {/* Notes */}
+            <View className="mb-4">
+              <Text className="mb-2 text-sm font-medium text-foreground">
+                Notes (Optional)
+              </Text>
+              <TextInput
+                value={parkingDetails.notes}
+                onChangeText={(text) =>
+                  setParkingDetails({ ...parkingDetails, notes: text })
+                }
+                placeholder="e.g., Near the elevator, next to the blue car"
+                placeholderTextColor="#707070"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-base text-foreground"
+              />
+            </View>
+
+            {/* Photo Section */}
+            <View className="mb-6">
+              <Text className="mb-2 text-sm font-medium text-foreground">
+                Photo (Optional)
+              </Text>
+
+              {parkingDetails.photoUri ? (
+                <View className="mb-3">
+                  <View className="relative">
+                    <View className="h-48 w-full overflow-hidden rounded-lg border border-border">
+                      <Image
+                        source={{ uri: parkingDetails.photoUri }}
+                        className="h-full w-full"
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setParkingDetails({ ...parkingDetails, photoUri: '' })
+                      }
+                      className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-full bg-background/80"
+                    >
+                      <X size={18} color="#707070" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={handleTakePhoto}
+                  className="flex-1 flex-row items-center justify-center rounded-lg border border-gold bg-gold/10 py-3"
+                  activeOpacity={0.7}
+                >
+                  <Camera size={18} color="#cba86e" />
+                  <Text className="ml-2 text-sm font-medium text-gold">Take Photo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handlePickImage}
+                  className="flex-1 flex-row items-center justify-center rounded-lg border border-gold bg-gold/10 py-3"
+                  activeOpacity={0.7}
+                >
+                  <ImageIcon size={18} color="#cba86e" />
+                  <Text className="ml-2 text-sm font-medium text-gold">Choose Photo</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Bottom Actions */}
+          <View className="border-t border-border px-4 py-4">
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={async () => {
+                  // Save with just coordinates (skip optional fields)
+                  if (!currentLocation) return;
+
+                  try {
+                    const address = await Location.reverseGeocodeAsync({
+                      latitude: currentLocation.coords.latitude,
+                      longitude: currentLocation.coords.longitude,
+                    });
+
+                    const addressString = address[0]
+                      ? `${address[0].street || ''} ${address[0].city || ''}, ${address[0].region || ''}`
+                      : undefined;
+
+                    const parkingData = {
+                      latitude: Number(currentLocation.coords.latitude.toFixed(6)),
+                      longitude: Number(currentLocation.coords.longitude.toFixed(6)),
+                      address: addressString,
+                    };
+
+                    saveParkingMutation.mutate(parkingData);
+                    setShowDetailsModal(false);
+                    setParkingDetails({ locationName: '', notes: '', photoUri: '' });
+                  } catch (error) {
+                    console.error('Error saving parking spot:', error);
+                    showToast('error', 'Failed to save parking spot');
+                  }
+                }}
+                className="flex-1 items-center justify-center rounded-lg border border-border bg-surface py-3"
+                activeOpacity={0.7}
+                disabled={saveParkingMutation.isPending}
+              >
+                <Text className="text-sm font-semibold text-textSecondary">Skip</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleConfirmSave}
+                className="flex-1 items-center justify-center rounded-lg bg-gold py-3"
+                activeOpacity={0.7}
+                disabled={saveParkingMutation.isPending}
+              >
+                {saveParkingMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#0d0d0d" />
+                ) : (
+                  <Text className="text-sm font-semibold text-background">
+                    Save Parking Spot
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

@@ -17,8 +17,9 @@ import {
   User,
   XCircle,
   RefreshCw,
+  Trash2,
 } from 'lucide-react-native';
-import { Alert, ScrollView, Text, TouchableOpacity, View, Switch, ActivityIndicator, RefreshControl } from 'react-native';
+import { Alert, ScrollView, Text, TouchableOpacity, View, Switch, ActivityIndicator, RefreshControl, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ProfileScreen = () => {
@@ -397,6 +398,31 @@ const ProfileScreen = () => {
               onPress={() => router.push('/(authenticated)/preferences')}
             />
           </Card>
+
+          {/* Delete Account Button */}
+          <TouchableOpacity
+            onPress={() => {
+              Alert.alert(
+                'Request Account Deletion',
+                'You will be redirected to our website to submit a data deletion request. This action is permanent and cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Continue',
+                    style: 'destructive',
+                    onPress: () => {
+                      Linking.openURL('https://www.membershipauto.com/data-deletion');
+                    },
+                  },
+                ]
+              );
+            }}
+            className="mb-4 flex-row items-center justify-center rounded-xl border-2 border-error bg-error/10 py-4"
+            activeOpacity={0.7}
+          >
+            <Trash2 size={20} color="#ef4444" />
+            <Text className="ml-2 text-base font-semibold text-error">Delete Account</Text>
+          </TouchableOpacity>
 
           {/* Logout Button */}
           <TouchableOpacity

@@ -9,14 +9,31 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "development-apk": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "distribution": "internal",
+      "channel": "development"
+    },
     "preview": {
-      "distribution": "store",
-      "autoIncrement": true
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview-aab": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "aab"
+      }
     },
     "production": {
       "autoIncrement": true,
       "android": {
-        "image": "latest"
+        "image": "latest",
+        "buildType": "aab"
       },
       "ios": {
         "image": "latest"
