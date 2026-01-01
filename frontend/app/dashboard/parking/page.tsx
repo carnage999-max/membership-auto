@@ -55,13 +55,19 @@ export default function ParkingReminderPage() {
 
       if (response.ok) {
         const data = await response.json();
+
+        // Parse location_name back into level and spot
+        const locationParts = data.location_name?.split(' - ') || [];
+        const level = locationParts[0] || '';
+        const spotNum = locationParts[1] || '';
+
         const spot: ParkingSpot = {
           id: data.id,
           latitude: Number(data.latitude),
           longitude: Number(data.longitude),
           address: data.address,
-          level: data.location_name,
-          spot: '',
+          level: level,
+          spot: spotNum,
           notes: data.notes,
           photo: data.photos?.[0] || '',
           savedAt: data.parked_at,
@@ -154,12 +160,18 @@ export default function ParkingReminderPage() {
       }
 
       const token = tokenStorage.getAccessToken();
+
+      // Combine level and spot into location_name
+      const locationName = [newSpot.level, newSpot.spot]
+        .filter(Boolean)
+        .join(' - ');
+
       const payload = {
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
+        latitude: Number(latitude.toFixed(6)),
+        longitude: Number(longitude.toFixed(6)),
         address,
-        location_name: newSpot.level,
-        notes: newSpot.notes,
+        location_name: locationName || undefined,
+        notes: newSpot.notes || undefined,
         photos: newSpot.photo ? [newSpot.photo] : [],
         timer_expires_at: timerEndTime,
         active: true,

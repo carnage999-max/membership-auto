@@ -130,6 +130,44 @@ def send_parking_reminder(parking_spot):
         )
 
 
+def send_parking_meter_expiring_notification(parking_spot):
+    """Send notification when parking meter is about to expire"""
+    from datetime import timedelta
+
+    if not parking_spot.timer_expires_at:
+        return
+
+    time_until_expiry = parking_spot.timer_expires_at - timezone.now()
+
+    # Send notification 15 minutes before expiry
+    if timedelta(minutes=14) <= time_until_expiry <= timedelta(minutes=16):
+        send_notification_to_user(
+            user=parking_spot.user,
+            title="⏰ Parking Meter Expiring Soon!",
+            body=f"Your parking meter expires in 15 minutes at {parking_spot.address or 'your location'}",
+            notification_type="parking_meter_expiring",
+            data={
+                "type": "parking_meter",
+                "parking_id": str(parking_spot.id),
+                "deepLink": "/(authenticated)/parking",
+            },
+        )
+
+    # Send notification when meter has expired
+    elif time_until_expiry <= timedelta(minutes=0):
+        send_notification_to_user(
+            user=parking_spot.user,
+            title="🚨 Parking Meter Expired!",
+            body=f"Your parking meter has expired! Move your vehicle to avoid a ticket.",
+            notification_type="parking_meter_expired",
+            data={
+                "type": "parking_meter",
+                "parking_id": str(parking_spot.id),
+                "deepLink": "/(authenticated)/parking",
+            },
+        )
+
+
 def send_membership_update(user, message: str):
     """Send membership-related notification"""
     send_notification_to_user(
