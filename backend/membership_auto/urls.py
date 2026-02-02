@@ -17,11 +17,17 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from vehicles.urls import telematics_urlpatterns
 
+def health_check(request):
+    """Simple health check endpoint for load balancer"""
+    return JsonResponse({"status": "healthy"})
+
 urlpatterns = [
+    path("health", health_check, name="health"),
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
     path("api/users/", include("users.urls")),
