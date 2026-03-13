@@ -1,7 +1,5 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { Home, AlertTriangle, Phone } from 'lucide-react';
